@@ -223,7 +223,6 @@ function App() {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSenha, setLoginSenha] = useState('')
   const [loginErro, setLoginErro] = useState<string | null>(null)
-  const [googleReady, setGoogleReady] = useState(false)
 
   useEffect(() => {
     if (usuarioLogado) {
