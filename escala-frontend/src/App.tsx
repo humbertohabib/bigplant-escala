@@ -235,7 +235,7 @@ function App() {
       if (!google) return
 
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-      console.log('Variáveis de ambiente disponíveis:', import.meta.env) // Debug
+      // console.log('Variáveis de ambiente disponíveis:', import.meta.env) // Debug
       if (!clientId) {
         console.error('VITE_GOOGLE_CLIENT_ID não configurado. Verifique as variáveis de ambiente do serviço Frontend no Render.')
         return
