@@ -98,7 +98,7 @@ public class ProfissionalController {
             profissional.setAtivo(true);
         }
         if (profissional.getPerfil() == null || profissional.getPerfil().isBlank()) {
-            profissional.setPerfil("MEDICO");
+            profissional.setPerfil("USUARIO");
         }
         if (profissional.getSenha() != null && !profissional.getSenha().isBlank()) {
             String hash = BCrypt.hashpw(profissional.getSenha(), BCrypt.gensalt(12));
@@ -159,7 +159,7 @@ public class ProfissionalController {
         response.email = profissional.getEmail();
         response.idHospital = profissional.getIdHospital();
         String perfil = profissional.getPerfil();
-        response.perfil = perfil != null && !perfil.isBlank() ? perfil : "MEDICO";
+        response.perfil = perfil != null && !perfil.isBlank() ? perfil : "USUARIO";
         response.token = jwtService.gerarToken(profissional);
         return ResponseEntity.ok(response);
     }
@@ -265,7 +265,7 @@ public class ProfissionalController {
                 : 1L;
             novo.setIdHospital(hospitalId);
             novo.setAtivo(true);
-            novo.setPerfil("MEDICO");
+            novo.setPerfil("USUARIO");
             profissional = profissionalRepository.save(novo);
             logger.info("Novo profissional criado: {}", profissional.getId());
         }
@@ -275,7 +275,7 @@ public class ProfissionalController {
         response.email = profissional.getEmail();
         response.idHospital = profissional.getIdHospital();
         String perfil = profissional.getPerfil();
-        response.perfil = perfil != null && !perfil.isBlank() ? perfil : "MEDICO";
+        response.perfil = perfil != null && !perfil.isBlank() ? perfil : "USUARIO";
         response.token = jwtService.gerarToken(profissional);
         return ResponseEntity.ok(response);
     }

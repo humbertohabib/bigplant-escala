@@ -1,135 +1,24 @@
 import './App.css'
 import { useEffect, useState } from 'react'
+import { DashboardLayout } from './components/layout/DashboardLayout'
+import { CalendarioEscala } from './components/calendar/CalendarioEscala'
+import { GerenciadorDisponibilidade } from './components/availability/GerenciadorDisponibilidade'
+import { GerenciadorTrocas } from './components/exchange/GerenciadorTrocas'
+import type {
+  Turno,
+  Escala,
+  RegrasConcretas,
+  Profissional,
+  Disponibilidade,
+  TurnoCrud,
+  LocalAtendimento,
+  UsuarioAutenticado,
+  ResumoProfissionalPeriodo,
+  IndicadoresTrocaPeriodo,
+  Aba
+} from './types'
 
-type Turno = {
-  id: number
-  data: string
-  horaInicio: string
-  horaFim: string
-  tipo: string
-  local: string
-  idProfissional?: number | null
-}
-
-type Escala = {
-  id: number
-  dataInicio: string
-  dataFim: string
-  status: string
-  turnos: Turno[]
-}
-
-type RegrasConcretas = {
-  maxNoitesMes: number | null
-  minDescansoHoras: number | null
-  maxPlantoesConsecutivos: number | null
-}
-
-type Profissional = {
-  id?: number
-  nome: string
-  crm: string
-  idHospital: number
-  cargaHorariaMensalMaxima?: number | null
-  cargaHorariaMensalMinima?: number | null
-  ativo?: boolean | null
-  email?: string | null
-  telefoneWhatsapp?: string | null
-   perfil?: string | null
-   senha?: string | null
-}
-
-type Disponibilidade = {
-  id?: number
-  idHospital: number
-  idProfissional: number
-  data: string
-  tipoTurno: string
-  disponivel: boolean
-}
-
-type TurnoCrud = {
-  id?: number
-  data: string
-  horaInicio: string
-  horaFim: string
-  tipo: string
-  local: string
-  idHospital: number
-  idProfissional?: number | null
-  idLocalAtendimento?: number | null
-}
-
-type LocalAtendimento = {
-  id?: number
-  nome: string
-  idHospital: number
-  ativo?: boolean | null
-  logradouro?: string
-  rua?: string
-  cidade?: string
-  estado?: string
-  pais?: string
-  complemento?: string
-  telefoneContato?: string
-}
-
-type TrocaPlantao = {
-  id?: number
-  idHospital: number
-  idTurno: number
-  idProfissionalOrigem: number
-  idProfissionalDestino: number
-  status: string
-  dataSolicitacao: string
-  dataResposta?: string | null
-  motivo?: string | null
-}
-
-type ResumoProfissionalPeriodo = {
-  idProfissional: number
-  nome: string
-  crm: string
-  totalPlantoes: number
-  totalNoites: number
-  horasTotais: number
-  cargaMensalMinima?: number | null
-  cargaMensalMaxima?: number | null
-}
-
-type ResumoTrocasProfissional = {
-  idProfissional: number
-  nome: string
-  crm: string
-  comoOrigem: number
-  comoDestino: number
-}
-
-type IndicadoresTrocaPeriodo = {
-  totalTrocas: number
-  totalSolicitadas: number
-  totalAprovadas: number
-  totalRejeitadas: number
-  porProfissional: ResumoTrocasProfissional[]
-}
-
-type UsuarioAutenticado = {
-  id: number
-  nome: string
-  email: string
-  perfil: string
-  idHospital: number
-  token: string
-}
-
-type Aba =
-  | 'escala'
-  | 'profissionais'
-  | 'disponibilidades'
-  | 'turnos'
-  | 'trocas'
-  | 'relatorios'
-  | 'locais'
+// Removendo tipos duplicados pois foram movidos para types.ts
 
 function App() {
   const API_URL_ENV = import.meta.env.VITE_API_URL
@@ -156,14 +45,7 @@ function App() {
     email: '',
     telefoneWhatsapp: '',
   })
-  const [disponibilidades, setDisponibilidades] = useState<Disponibilidade[]>([])
-  const [novaDisponibilidade, setNovaDisponibilidade] = useState<Disponibilidade>({
-    idHospital: 1,
-    idProfissional: 0,
-    data: '',
-    tipoTurno: 'DIA',
-    disponivel: true,
-  })
+
   const [turnos, setTurnos] = useState<TurnoCrud[]>([])
   const [novoTurno, setNovoTurno] = useState<TurnoCrud>({
     data: '',
@@ -189,19 +71,11 @@ function App() {
     telefoneContato: '',
   })
   const [profissionalEditandoId, setProfissionalEditandoId] = useState<number | null>(null)
-  const [disponibilidadeEditandoId, setDisponibilidadeEditandoId] = useState<number | null>(null)
+
   const [turnoEditandoId, setTurnoEditandoId] = useState<number | null>(null)
   const [localEditandoId, setLocalEditandoId] = useState<number | null>(null)
-  const [trocas, setTrocas] = useState<TrocaPlantao[]>([])
-  const [novaTroca, setNovaTroca] = useState<{
-    idTurno: number
-    idProfissionalDestino: number
-    motivo: string
-  }>({
-    idTurno: 0,
-    idProfissionalDestino: 0,
-    motivo: '',
-  })
+  // Estado para passar o turno selecionado na aba Escala para o Gerenciador de Trocas
+  const [turnoTrocaInicialId, setTurnoTrocaInicialId] = useState<number | null>(null)
   const [dataInicioRelatorio, setDataInicioRelatorio] = useState('')
   const [dataFimRelatorio, setDataFimRelatorio] = useState('')
   const [resumoProfissionaisPeriodo, setResumoProfissionaisPeriodo] = useState<
@@ -237,7 +111,11 @@ function App() {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
       // console.log('Variáveis de ambiente disponíveis:', import.meta.env) // Debug
       if (!clientId) {
-        console.error('VITE_GOOGLE_CLIENT_ID não configurado. Verifique as variáveis de ambiente do serviço Frontend no Render.')
+        console.warn(
+          'VITE_GOOGLE_CLIENT_ID não configurado.\n' +
+          '- Desenvolvimento local: Crie um arquivo .env.local na raiz do projeto com VITE_GOOGLE_CLIENT_ID=seu_client_id.\n' +
+          '- Produção (Render): Configure a variável de ambiente no painel do serviço.'
+        )
         return
       }
 
@@ -316,6 +194,12 @@ function App() {
     document.body.appendChild(script)
     
   }, [usuarioLogado, API_BASE_URL])
+
+  useEffect(() => {
+    if (usuarioLogado?.perfil === 'USUARIO') {
+      setAba('restricted')
+    }
+  }, [usuarioLogado])
 
   const authFetch = (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers || {})
@@ -530,13 +414,6 @@ function App() {
   const realizarLogout = () => {
     setUsuarioLogado(null)
     setAba('escala')
-    setNovaDisponibilidade({
-      idHospital: 1,
-      idProfissional: 0,
-      data: '',
-      tipoTurno: 'DIA',
-      disponivel: true,
-    })
   }
 
   if (!usuarioLogado) {
@@ -618,88 +495,87 @@ function App() {
     )
   }
 
+  const handleSolicitarTroca = (turno: Turno) => {
+    setTurnoTrocaInicialId(turno.id)
+    setAba('trocas')
+  }
+
   return (
-    <div className="App">
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <div style={{ textAlign: 'left' }}>
-          <h1 style={{ margin: 0 }}>BigPlant Escala</h1>
-          <p
-            style={{
-              margin: 0,
-              marginTop: 4,
-              fontSize: 14,
-              color: '#4b5563',
-            }}
-          >
-            Painel de gestão de escala hospitalar
-          </p>
-        </div>
-        {usuarioLogado && (
-          <div style={{ textAlign: 'right', fontSize: 14 }}>
-            <div style={{ fontWeight: 500 }}>Bem-vindo, {usuarioLogado.nome}</div>
-            <div style={{ color: '#6b7280', marginBottom: 4 }}>{usuarioLogado.email}</div>
-            <button
-              onClick={realizarLogout}
-              style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: 12,
-                borderRadius: 999,
-                border: '1px solid #d1d5db',
-                background: '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              Sair
-            </button>
-          </div>
-        )}
-      </header>
-      <nav style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button onClick={() => setAba('escala')}>Escala e regras</button>
-        <button onClick={() => setAba('profissionais')}>Profissionais</button>
-        <button onClick={() => setAba('disponibilidades')}>Disponibilidades</button>
-        <button onClick={() => setAba('turnos')}>Turnos</button>
-        <button onClick={() => setAba('trocas')}>Trocas</button>
-        <button onClick={() => setAba('relatorios')}>Relatórios</button>
-        <button onClick={() => setAba('locais')}>Locais</button>
-      </nav>
+    <DashboardLayout
+      usuario={usuarioLogado}
+      abaAtual={aba}
+      setAba={setAba}
+      onLogout={realizarLogout}
+    >
 
       {erro && <p style={{ color: 'red' }}>{erro}</p>}
 
-      {aba === 'escala' && (
-        <>
-          <p>Geração automática de escala para os próximos 15 dias.</p>
-          <button
-            onClick={gerarEscala}
-            disabled={
-              carregando ||
-              (usuarioLogado &&
-                usuarioLogado.perfil !== 'ADMIN' &&
-                usuarioLogado.perfil !== 'COORDENADOR' &&
-                usuarioLogado.perfil !== 'SECRETARIO')
-            }
-          >
-            {carregando ? 'Gerando...' : 'Gerar escala próximos 15 dias'}
-          </button>
+      {aba === 'restricted' && (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50 rounded-lg border border-gray-200 m-4">
+          <div className="bg-blue-100 p-4 rounded-full mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
+          <p className="text-gray-600 max-w-md mb-6">
+            Seu perfil de usuário foi criado com sucesso, mas você ainda não possui permissões para visualizar escalas ou realizar trocas.
+          </p>
+          <div className="bg-white p-4 rounded shadow-sm border border-gray-100 max-w-md w-full text-left">
+            <h3 className="font-semibold text-gray-700 mb-2">O que fazer agora?</h3>
+            <ul className="list-disc list-inside text-gray-600 space-y-1 text-sm">
+              <li>Aguarde a liberação do seu cadastro pela administração.</li>
+              <li>Entre em contato com o coordenador da sua unidade.</li>
+              <li>Verifique se seus dados cadastrais estão corretos.</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
-          <section style={{ marginTop: '2rem' }}>
-            <h2>Regras de escala</h2>
-            {!regras && (
-              <button onClick={carregarRegras}>Carregar regras do hospital</button>
+      {aba === 'escala' && (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p className="text-gray-600 mb-2">Geração automática de escala para os próximos 15 dias.</p>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                onClick={gerarEscala}
+                disabled={
+                  carregando ||
+                  (usuarioLogado &&
+                    usuarioLogado.perfil !== 'ADMIN' &&
+                    usuarioLogado.perfil !== 'COORDENADOR' &&
+                    usuarioLogado.perfil !== 'SECRETARIO')
+                }
+              >
+                {carregando ? 'Gerando...' : 'Gerar escala próximos 15 dias'}
+              </button>
+            </div>
+            
+            {(usuarioLogado?.perfil === 'ADMIN' || usuarioLogado?.perfil === 'COORDENADOR') && (
+               <div className="flex gap-2">
+                 {!regras && (
+                   <button 
+                     onClick={carregarRegras}
+                     className="text-blue-600 hover:text-blue-800 underline"
+                   >
+                     Configurar regras
+                   </button>
+                 )}
+               </div>
             )}
-            {regras && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 320 }}>
-                <label>
+          </div>
+
+          {regras && (
+            <div className="bg-white p-4 rounded shadow mb-4 border border-gray-200">
+              <h3 className="font-semibold mb-3">Regras de Escala</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex flex-col text-sm">
                   Máximo de noites por mês
                   <input
                     type="number"
+                    className="border p-1 rounded mt-1"
                     value={regras.maxNoitesMes ?? ''}
                     onChange={(e) =>
                       setRegras({
@@ -709,10 +585,11 @@ function App() {
                     }
                   />
                 </label>
-                <label>
-                  Descanso mínimo entre plantões (horas)
+                <label className="flex flex-col text-sm">
+                  Descanso mínimo (horas)
                   <input
                     type="number"
+                    className="border p-1 rounded mt-1"
                     value={regras.minDescansoHoras ?? ''}
                     onChange={(e) =>
                       setRegras({
@@ -722,10 +599,11 @@ function App() {
                     }
                   />
                 </label>
-                <label>
-                  Máximo de plantões consecutivos
+                <label className="flex flex-col text-sm">
+                  Máx. plantões consecutivos
                   <input
                     type="number"
+                    className="border p-1 rounded mt-1"
                     value={regras.maxPlantoesConsecutivos ?? ''}
                     onChange={(e) =>
                       setRegras({
@@ -735,112 +613,87 @@ function App() {
                     }
                   />
                 </label>
+              </div>
+              <div className="mt-3 flex justify-end">
                 <button
                   onClick={salvarRegras}
-                  disabled={
-                    salvandoRegras ||
-                    (usuarioLogado &&
-                      usuarioLogado.perfil !== 'ADMIN' &&
-                      usuarioLogado.perfil !== 'COORDENADOR')
-                  }
+                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+                  disabled={salvandoRegras}
                 >
-                  {salvandoRegras ? 'Salvando...' : 'Salvar regras'}
+                  {salvandoRegras ? 'Salvando...' : 'Salvar Regras'}
                 </button>
               </div>
-            )}
-          </section>
+            </div>
+          )}
 
-          {escala && (
+          <div style={{ flex: 1, minHeight: 0 }}>
+             <CalendarioEscala
+               escala={escala}
+               usuario={usuarioLogado!}
+               profissionais={profissionais}
+               onSolicitarTroca={handleSolicitarTroca}
+             />
+          </div>
+        </div>
+      )}
+
+      {aba === 'relatorios' && (
+        <section>
+          <h2>Relatórios e Indicadores</h2>
+          
+          {resumoProfissionaisLista && resumoProfissionaisLista.length > 0 ? (
             <div style={{ marginTop: '1rem' }}>
-              <h2>
-                Escala #{escala.id} ({escala.status})
-              </h2>
-              <p>
-                Período: {escala.dataInicio} até {escala.dataFim}
-              </p>
-              <table>
+              <h3>Resumo por profissional na escala atual</h3>
+              <table className="w-full border-collapse mt-4">
                 <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Início</th>
-                    <th>Fim</th>
-                    <th>Tipo</th>
-                    <th>Local</th>
-                    <th>Profissional</th>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="p-2 border">Profissional</th>
+                    <th className="p-2 border">ID</th>
+                    <th className="p-2 border">Total de plantões</th>
+                    <th className="p-2 border">Plantões noturnos</th>
+                    <th className="p-2 border">Máx. dias consecutivos</th>
+                    <th className="p-2 border">Horas no período</th>
+                    <th className="p-2 border">Projeção 30 dias</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {escala.turnos.map((turno) => (
-                    <tr key={turno.id}>
-                      <td>{turno.data}</td>
-                      <td>{turno.horaInicio}</td>
-                      <td>{turno.horaFim}</td>
-                      <td>{turno.tipo}</td>
-                      <td>{turno.local}</td>
-                      <td>
-                        {turno.idProfissional != null
-                          ? nomePorProfissional[turno.idProfissional] ||
-                            `ID ${turno.idProfissional}`
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {resumoProfissionaisLista.map((r) => {
+                    const profissional = profissionais.find(
+                      (p) => p.id === r.idProfissional,
+                    )
+                    const excedeuCarga =
+                      profissional?.cargaHorariaMensalMaxima != null &&
+                      r.horasProjecao30Dias >
+                        profissional.cargaHorariaMensalMaxima
+                    const abaixoMinima =
+                      profissional?.cargaHorariaMensalMinima != null &&
+                      r.horasProjecao30Dias <
+                        profissional.cargaHorariaMensalMinima
+                    let estilo: React.CSSProperties | undefined
+                    if (excedeuCarga) {
+                      estilo = { backgroundColor: '#ffe5e5' }
+                    } else if (abaixoMinima) {
+                      estilo = { backgroundColor: '#e5f3ff' }
+                    }
+                    return (
+                      <tr key={r.idProfissional} style={estilo} className="border-b">
+                        <td className="p-2">{r.nome ?? '-'}</td>
+                        <td className="p-2">{r.idProfissional}</td>
+                        <td className="p-2">{r.totalPlantoes}</td>
+                        <td className="p-2">{r.totalNoites}</td>
+                        <td className="p-2">{r.maxConsecutivos}</td>
+                        <td className="p-2">{r.horasPeriodo}</td>
+                        <td className="p-2">{r.horasProjecao30Dias}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
-
-              {resumoProfissionaisLista && resumoProfissionaisLista.length > 0 && (
-                <div style={{ marginTop: '1rem' }}>
-                  <h3>Resumo por profissional na escala atual</h3>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Profissional</th>
-                        <th>ID</th>
-                        <th>Total de plantões</th>
-                        <th>Plantões noturnos</th>
-                        <th>Máx. dias consecutivos</th>
-                        <th>Horas no período da escala</th>
-                        <th>Horas projetadas em 30 dias</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {resumoProfissionaisLista.map((r) => {
-                        const profissional = profissionais.find(
-                          (p) => p.id === r.idProfissional,
-                        )
-                        const excedeuCarga =
-                          profissional?.cargaHorariaMensalMaxima != null &&
-                          r.horasProjecao30Dias >
-                            profissional.cargaHorariaMensalMaxima
-                        const abaixoMinima =
-                          profissional?.cargaHorariaMensalMinima != null &&
-                          r.horasProjecao30Dias <
-                            profissional.cargaHorariaMensalMinima
-                        let estilo: React.CSSProperties | undefined
-                        if (excedeuCarga) {
-                          estilo = { backgroundColor: '#ffe5e5' }
-                        } else if (abaixoMinima) {
-                          estilo = { backgroundColor: '#e5f3ff' }
-                        }
-                        return (
-                          <tr key={r.idProfissional} style={estilo}>
-                            <td>{r.nome ?? '-'}</td>
-                            <td>{r.idProfissional}</td>
-                            <td>{r.totalPlantoes}</td>
-                            <td>{r.totalNoites}</td>
-                            <td>{r.maxConsecutivos}</td>
-                            <td>{r.horasPeriodo}</td>
-                            <td>{r.horasProjecao30Dias}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
+          ) : (
+            <p className="mt-4 text-gray-500">Nenhum dado de escala disponível para gerar relatório. Gere uma escala primeiro.</p>
           )}
-        </>
+        </section>
       )}
 
       {aba === 'profissionais' && (
@@ -913,6 +766,7 @@ function App() {
                 }
               >
                 <option value="MEDICO">Médico</option>
+                <option value="USUARIO">Usuário</option>
                 <option value="SECRETARIO">Secretário</option>
                 <option value="COORDENADOR">Coordenador</option>
                 <option value="ADMIN">Administrador</option>
@@ -1079,187 +933,11 @@ function App() {
         </section>
       )}
 
-      {aba === 'disponibilidades' && (
-        <section>
-          <h2>Disponibilidades</h2>
-          <button
-            onClick={async () => {
-              try {
-                const resposta = await authFetch('http://localhost:8080/api/disponibilidades')
-                if (!resposta.ok) throw new Error('Erro ao carregar disponibilidades')
-                const dados: Disponibilidade[] = await resposta.json()
-                setDisponibilidades(dados)
-              } catch (e) {
-                setErro((e as Error).message)
-              }
-            }}
-          >
-            Carregar disponibilidades
-          </button>
-          <div style={{ marginTop: '1rem', maxWidth: 400 }}>
-            <h3>{disponibilidadeEditandoId ? 'Editar disponibilidade' : 'Nova disponibilidade'}</h3>
-            <label>
-              ID Profissional
-              <input
-                type="number"
-                value={novaDisponibilidade.idProfissional}
-                onChange={(e) =>
-                  setNovaDisponibilidade({
-                    ...novaDisponibilidade,
-                    idProfissional: Number(e.target.value),
-                  })
-                }
-                disabled={usuarioLogado?.perfil === 'MEDICO'}
-              />
-            </label>
-            <label>
-              Data
-              <input
-                type="date"
-                value={novaDisponibilidade.data}
-                onChange={(e) =>
-                  setNovaDisponibilidade({
-                    ...novaDisponibilidade,
-                    data: e.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Tipo de turno
-              <select
-                value={novaDisponibilidade.tipoTurno}
-                onChange={(e) =>
-                  setNovaDisponibilidade({
-                    ...novaDisponibilidade,
-                    tipoTurno: e.target.value,
-                  })
-                }
-              >
-                <option value="DIA">DIA</option>
-                <option value="NOITE">NOITE</option>
-              </select>
-            </label>
-            <label>
-              Disponível
-              <input
-                type="checkbox"
-                checked={novaDisponibilidade.disponivel}
-                onChange={(e) =>
-                  setNovaDisponibilidade({
-                    ...novaDisponibilidade,
-                    disponivel: e.target.checked,
-                  })
-                }
-              />
-            </label>
-            <button
-              onClick={async () => {
-                try {
-                  const metodo = disponibilidadeEditandoId ? 'PUT' : 'POST'
-                  const url = disponibilidadeEditandoId
-                    ? `http://localhost:8080/api/disponibilidades/${disponibilidadeEditandoId}`
-                    : 'http://localhost:8080/api/disponibilidades'
-                  const resposta = await authFetch(url, {
-                    method: metodo,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(novaDisponibilidade),
-                  })
-                  if (!resposta.ok) throw new Error('Erro ao salvar disponibilidade')
-                  const salvo: Disponibilidade = await resposta.json()
-                  if (disponibilidadeEditandoId) {
-                    setDisponibilidades((atual) =>
-                      atual.map((d) => (d.id === salvo.id ? salvo : d)),
-                    )
-                  } else {
-                    setDisponibilidades((atual) => [...atual, salvo])
-                  }
-                  setNovaDisponibilidade({
-                    idHospital: 1,
-                    idProfissional: usuarioLogado?.perfil === 'MEDICO' ? usuarioLogado.id : 0,
-                    data: '',
-                    tipoTurno: 'DIA',
-                    disponivel: true,
-                  })
-                  setDisponibilidadeEditandoId(null)
-                } catch (e) {
-                  setErro((e as Error).message)
-                }
-              }}
-            >
-              {disponibilidadeEditandoId ? 'Atualizar' : 'Salvar'}
-            </button>
-          </div>
-          <table style={{ marginTop: '1rem' }}>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Profissional</th>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Disponível</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {disponibilidades.map((d) => {
-                const podeEditarExcluir =
-                  usuarioLogado?.perfil !== 'MEDICO' ||
-                  (usuarioLogado && d.idProfissional === usuarioLogado.id)
-                return (
-                <tr key={d.id}>
-                  <td>{d.id}</td>
-                  <td>{d.idProfissional}</td>
-                  <td>{d.data}</td>
-                  <td>{d.tipoTurno}</td>
-                  <td>{d.disponivel ? 'Sim' : 'Não'}</td>
-                  <td>
-                    <button
-                      disabled={!podeEditarExcluir}
-                      onClick={() => {
-                        setDisponibilidadeEditandoId(d.id ?? null)
-                        setNovaDisponibilidade({
-                          idHospital: d.idHospital,
-                          idProfissional: d.idProfissional,
-                          data: d.data,
-                          tipoTurno: d.tipoTurno,
-                          disponivel: d.disponivel,
-                          id: d.id,
-                        })
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      disabled={!podeEditarExcluir}
-                      onClick={async () => {
-                        if (!d.id) return
-                        const confirmar = window.confirm(
-                          `Confirmar exclusão da disponibilidade ID ${d.id} (profissional ${d.idProfissional}, ${d.data}, turno ${d.tipoTurno})?`,
-                        )
-                        if (!confirmar) return
-                        try {
-                          const resposta = await authFetch(
-                            `http://localhost:8080/api/disponibilidades/${d.id}`,
-                            { method: 'DELETE' },
-                          )
-                          if (!resposta.ok && resposta.status !== 204) {
-                            throw new Error('Erro ao remover disponibilidade')
-                          }
-                          setDisponibilidades((atual) => atual.filter((x) => x.id !== d.id))
-                        } catch (e) {
-                          setErro((e as Error).message)
-                        }
-                      }}
-                    >
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
-        </section>
+      {aba === 'disponibilidade' && (
+        <GerenciadorDisponibilidade 
+          usuario={usuarioLogado!} 
+          apiBaseUrl={API_BASE_URL} 
+        />
       )}
 
       {aba === 'turnos' && (
@@ -1489,166 +1167,13 @@ function App() {
       )}
 
       {aba === 'trocas' && (
-        <section>
-          <h2>Trocas de plantão</h2>
-          <button
-            onClick={async () => {
-              try {
-                const resposta = await authFetch('http://localhost:8080/api/trocas')
-                if (!resposta.ok) throw new Error('Erro ao carregar trocas')
-                const dados: TrocaPlantao[] = await resposta.json()
-                setTrocas(dados)
-              } catch (e) {
-                setErro((e as Error).message)
-              }
-            }}
-          >
-            Carregar trocas
-          </button>
-          <div style={{ marginTop: '1rem', maxWidth: 400 }}>
-            <h3>Nova solicitação de troca</h3>
-            <label>
-              ID Turno
-              <input
-                type="number"
-                value={novaTroca.idTurno || ''}
-                onChange={(e) =>
-                  setNovaTroca({
-                    ...novaTroca,
-                    idTurno: e.target.value === '' ? 0 : Number(e.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
-              ID Profissional destino
-              <input
-                type="number"
-                value={novaTroca.idProfissionalDestino || ''}
-                onChange={(e) =>
-                  setNovaTroca({
-                    ...novaTroca,
-                    idProfissionalDestino: e.target.value === '' ? 0 : Number(e.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
-              Motivo
-              <input
-                value={novaTroca.motivo}
-                onChange={(e) =>
-                  setNovaTroca({
-                    ...novaTroca,
-                    motivo: e.target.value,
-                  })
-                }
-              />
-            </label>
-            <button
-              onClick={async () => {
-                try {
-                  const resposta = await authFetch('http://localhost:8080/api/trocas', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      idTurno: novaTroca.idTurno,
-                      idProfissionalDestino: novaTroca.idProfissionalDestino,
-                      motivo: novaTroca.motivo,
-                    }),
-                  })
-                  if (!resposta.ok) throw new Error('Erro ao solicitar troca')
-                  const salvo: TrocaPlantao = await resposta.json()
-                  setTrocas((atual) => [...atual, salvo])
-                  setNovaTroca({
-                    idTurno: 0,
-                    idProfissionalDestino: 0,
-                    motivo: '',
-                  })
-                } catch (e) {
-                  setErro((e as Error).message)
-                }
-              }}
-            >
-              Solicitar troca
-            </button>
-          </div>
-          <table style={{ marginTop: '1rem' }}>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>ID Turno</th>
-                <th>Profissional origem</th>
-                <th>Profissional destino</th>
-                <th>Status</th>
-                <th>Data solicitação</th>
-                <th>Data resposta</th>
-                <th>Motivo</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trocas.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.id}</td>
-                  <td>{t.idTurno}</td>
-                  <td>{t.idProfissionalOrigem}</td>
-                  <td>{t.idProfissionalDestino}</td>
-                  <td>{t.status}</td>
-                  <td>{t.dataSolicitacao}</td>
-                  <td>{t.dataResposta ?? '-'}</td>
-                  <td>{t.motivo ?? '-'}</td>
-                  <td>
-                    {t.status === 'SOLICITADA' && (
-                      <>
-                        <button
-                          onClick={async () => {
-                            if (!t.id) return
-                            try {
-                              const resposta = await authFetch(
-                                `http://localhost:8080/api/trocas/${t.id}/aprovar`,
-                                { method: 'PUT' },
-                              )
-                              if (!resposta.ok) throw new Error('Erro ao aprovar troca')
-                              const atualizado: TrocaPlantao = await resposta.json()
-                              setTrocas((atual) =>
-                                atual.map((x) => (x.id === atualizado.id ? atualizado : x)),
-                              )
-                            } catch (e) {
-                              setErro((e as Error).message)
-                            }
-                          }}
-                        >
-                          Aprovar
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (!t.id) return
-                            try {
-                              const resposta = await authFetch(
-                                `http://localhost:8080/api/trocas/${t.id}/rejeitar`,
-                                { method: 'PUT' },
-                              )
-                              if (!resposta.ok) throw new Error('Erro ao rejeitar troca')
-                              const atualizado: TrocaPlantao = await resposta.json()
-                              setTrocas((atual) =>
-                                atual.map((x) => (x.id === atualizado.id ? atualizado : x)),
-                              )
-                            } catch (e) {
-                              setErro((e as Error).message)
-                            }
-                          }}
-                        >
-                          Rejeitar
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <GerenciadorTrocas
+          usuario={usuarioLogado!}
+          apiBaseUrl={API_BASE_URL}
+          profissionais={profissionais}
+          turnoInicialId={turnoTrocaInicialId}
+          onLimparTurnoInicial={() => setTurnoTrocaInicialId(null)}
+        />
       )}
 
       {aba === 'locais' && (
@@ -2225,7 +1750,7 @@ function App() {
           )}
         </section>
       )}
-    </div>
+    </DashboardLayout>
   )
 }
 
