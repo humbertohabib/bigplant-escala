@@ -2,7 +2,7 @@ services:
   # Serviço do Backend (Spring Boot)
   - type: web
     name: escala-backend
-    env: docker
+    runtime: docker
     dockerContext: escala-backend
     plan: free
     branch: main
@@ -16,11 +16,13 @@ services:
       - key: GOOGLE_AUTO_ONBOARDING_HOSPITAL_ID
         sync: false
 
-# Serviço do Frontend (React/Vite)
-staticSites:
-  - name: escala-frontend
+  # Serviço do Frontend (React/Vite)
+  - type: web
+    name: escala-frontend
+    runtime: static
+    plan: free
     buildCommand: cd escala-frontend && npm install && npm run build
-    publishDir: escala-frontend/dist
+    staticPublishPath: escala-frontend/dist
     branch: main
     routes:
       - type: rewrite
