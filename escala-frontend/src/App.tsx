@@ -132,6 +132,8 @@ type Aba =
   | 'locais'
 
 function App() {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
   const [carregando, setCarregando] = useState(false)
   const [escala, setEscala] = useState<Escala | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -268,7 +270,7 @@ function App() {
         setLoginErro(null)
         try {
           const resposta = await fetch(
-            'http://localhost:8080/api/profissionais/login/google',
+            `${API_BASE_URL}/api/profissionais/login/google`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -427,7 +429,7 @@ function App() {
       setCarregando(true)
       setErro(null)
 
-      const resposta = await authFetch('http://localhost:8080/api/escala/gerar/1', {
+      const resposta = await authFetch(`${API_BASE_URL}/api/escala/gerar/1`, {
         method: 'POST',
       })
 
@@ -446,7 +448,7 @@ function App() {
 
   const carregarRegras = async () => {
     try {
-      const resposta = await authFetch('http://localhost:8080/api/regras/concretas/1')
+      const resposta = await authFetch(`${API_BASE_URL}/api/regras/concretas/1`)
       if (!resposta.ok) {
         throw new Error('Erro ao carregar regras')
       }
@@ -461,7 +463,7 @@ function App() {
     if (!regras) return
     try {
       setSalvandoRegras(true)
-      const resposta = await authFetch('http://localhost:8080/api/regras/concretas/1', {
+      const resposta = await authFetch(`${API_BASE_URL}/api/regras/concretas/1`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(regras),
@@ -488,7 +490,7 @@ function App() {
       return
     }
     try {
-      const resposta = await fetch('http://localhost:8080/api/profissionais/login', {
+      const resposta = await fetch(`${API_BASE_URL}/api/profissionais/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailTrim, senha: senhaTrim }),
