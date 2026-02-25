@@ -229,81 +229,91 @@ function App() {
     if (usuarioLogado) {
       return
     }
-    if ((window as any).google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      setGoogleReady(true)
+
+    // Função para inicializar o botão do Google
+    const initializeGoogleButton = () => {
+      const google = (window as any).google
+      if (!google) return
+
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+      if (!clientId) {
+        console.error('VITE_GOOGLE_CLIENT_ID não configurado')
+        return
+      }
+
+      const buttonContainer = document.getElementById('google-login-button')
+      if (!buttonContainer) return
+
+      // Limpa container antes de renderizar
+      buttonContainer.innerHTML = ''
+
+      try {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: any) => {
+            const credential = response && response.credential
+            if (!credential) return
+            
+            setLoginErro(null)
+            try {
+              const resposta = await fetch(
+                `${API_BASE_URL}/api/profissionais/login/google`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ idToken: credential }),
+                },
+              )
+              if (resposta.status === 401) {
+                setLoginErro('Conta Google não autorizada ou falha na validação')
+                return
+              }
+              if (!resposta.ok) {
+                throw new Error('Erro ao autenticar com Google. Tente novamente.')
+              }
+              const dados: UsuarioAutenticado = await resposta.json()
+              setUsuarioLogado(dados)
+              setLoginSenha('')
+            } catch (e) {
+              setLoginErro((e as Error).message)
+            }
+          },
+        })
+
+        google.accounts.id.renderButton(buttonContainer, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          width: '280',
+          text: 'signin_with',
+          shape: 'pill',
+        })
+      } catch (error) {
+        console.error('Erro ao inicializar Google Sign-In:', error)
+      }
+    }
+
+    // Se já estiver carregado
+    if ((window as any).google) {
+      initializeGoogleButton()
       return
     }
-    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      return
-    }
+
+    // Se o script já existe mas não carregou
     if (document.getElementById('google-signin-script')) {
       return
     }
+
+    // Carrega o script
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true
     script.defer = true
     script.id = 'google-signin-script'
-    script.onload = () => {
-      if ((window as any).google) {
-        setGoogleReady(true)
-      }
-    }
+    script.onload = initializeGoogleButton
     document.body.appendChild(script)
-  }, [usuarioLogado])
-
-  useEffect(() => {
-    if (!googleReady || usuarioLogado) {
-      return
-    }
-    const google = (window as any).google
-    if (!google || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      return
-    }
-    const buttonContainer = document.getElementById('google-login-button')
-    if (!buttonContainer) {
-      return
-    }
-    buttonContainer.innerHTML = ''
-    google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: async (response: any) => {
-        const credential = response && response.credential
-        if (!credential) {
-          return
-        }
-        setLoginErro(null)
-        try {
-          const resposta = await fetch(
-            `${API_BASE_URL}/api/profissionais/login/google`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ idToken: credential }),
-            },
-          )
-          if (resposta.status === 401) {
-            setLoginErro('Conta Google não autorizada neste portal')
-            return
-          }
-          if (!resposta.ok) {
-            throw new Error('Erro ao autenticar com Google. Tente novamente.')
-          }
-          const dados: UsuarioAutenticado = await resposta.json()
-          setUsuarioLogado(dados)
-          setLoginSenha('')
-        } catch (e) {
-          setLoginErro((e as Error).message)
-        }
-      },
-    })
-    google.accounts.id.renderButton(buttonContainer, {
-      type: 'standard',
-      theme: 'outline',
-      size: 'large',
-      width: '280',
-    })
-  }, [googleReady, usuarioLogado])
+    
+  }, [usuarioLogado, API_BASE_URL])
 
   const authFetch = (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers || {})

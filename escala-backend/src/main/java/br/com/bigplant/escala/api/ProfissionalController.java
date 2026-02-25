@@ -36,10 +36,10 @@ public class ProfissionalController {
     @Value("${google.clientId:}")
     private String googleClientId;
 
-    @Value("${google.autoOnboardingDomain:}")
+    @Value("${google.autoOnboardingDomain:#{null}}")
     private String googleAutoOnboardingDomain;
 
-    @Value("${google.autoOnboardingDefaultHospitalId:0}")
+    @Value("${google.autoOnboardingDefaultHospitalId:1}")
     private Long googleAutoOnboardingDefaultHospitalId;
 
     public ProfissionalController(
@@ -194,21 +194,29 @@ public class ProfissionalController {
         if (profissionalOpt.isPresent()) {
             profissional = profissionalOpt.get();
         } else {
-            if (googleAutoOnboardingDomain == null
-                    || googleAutoOnboardingDomain.isBlank()
-                    || googleAutoOnboardingDefaultHospitalId == null
-                    || googleAutoOnboardingDefaultHospitalId <= 0L) {
+            // Se googleAutoOnboardingDefaultHospitalId <= 0, não cria automaticamente
+            if (googleAutoOnboardingDefaultHospitalId == null || googleAutoOnboardingDefaultHospitalId <= 0L) {
+                 // Pode ser necessário definir um ID padrão via env var ou código, 
+                 // mas por segurança bloqueia se não houver um hospital padrão
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+
             int atIndex = email.indexOf('@');
             if (atIndex < 0) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             String domain = email.substring(atIndex + 1).toLowerCase();
-            String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
-            if (!domain.equals(configuredDomain)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            
+            // Validação de domínio opcional: se googleAutoOnboardingDomain estiver configurado, valida.
+            // Se não estiver configurado (ou for nulo/vazio), permite qualquer domínio.
+            if (googleAutoOnboardingDomain != null && !googleAutoOnboardingDomain.isBlank()) {
+                String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
+                if (!domain.equals(configuredDomain)) {
+                     // Retorna erro se o domínio for exigido e não bater
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
             }
+            
             Profissional novo = new Profissional();
             String nome = (String) payload.get("name");
             if (nome == null || nome.isBlank()) {
