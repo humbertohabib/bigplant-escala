@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   format, 
   parseISO, 
@@ -8,7 +8,6 @@ import {
   startOfWeek, 
   endOfWeek, 
   isSameMonth, 
-  isSameDay, 
   addMonths, 
   subMonths,
   getDate,
@@ -28,8 +27,7 @@ import {
   LayoutList,
   LayoutGrid,
   ChevronLeft,
-  ChevronRight,
-  ArrowRight
+  ChevronRight
 } from 'lucide-react'
 import type { Disponibilidade, UsuarioAutenticado } from '../../types'
 

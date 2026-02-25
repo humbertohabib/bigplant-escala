@@ -13,7 +13,6 @@ import {
   Filter,
   AlertCircle,
   Loader2,
-  ChevronRight,
   ArrowRight
 } from 'lucide-react'
 import type { TrocaPlantao, Turno, Profissional, UsuarioAutenticado } from '../../types'
