@@ -13,6 +13,8 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/profissionais")
 public class ProfissionalController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProfissionalController.class);
 
     private final ProfissionalRepository profissionalRepository;
     private final JwtService jwtService;
@@ -162,10 +166,13 @@ public class ProfissionalController {
 
     @PostMapping("/login/google")
     public ResponseEntity<LoginResponse> loginGoogle(@RequestBody GoogleLoginRequest request) {
+        logger.info("Recebendo requisição de login Google");
         if (request == null || request.idToken == null || request.idToken.isBlank()) {
+            logger.warn("Token Google vazio ou requisição nula");
             return ResponseEntity.badRequest().build();
         }
         if (googleClientId == null || googleClientId.isBlank()) {
+            logger.error("Google Client ID não configurado no backend");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
         GoogleIdToken idToken;
@@ -177,15 +184,20 @@ public class ProfissionalController {
                             .build();
             idToken = verifier.verify(request.idToken);
         } catch (GeneralSecurityException | IOException e) {
+            logger.error("Erro ao verificar token Google", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (idToken == null) {
+            logger.warn("Token Google inválido (idToken null após verify)");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         Payload payload = idToken.getPayload();
         String email = payload.getEmail();
         Boolean emailVerified = (Boolean) payload.get("email_verified");
+        logger.info("Token verificado. Email: {}, Verified: {}", email, emailVerified);
+        
         if (email == null || email.isBlank() || emailVerified == null || !emailVerified) {
+            logger.warn("Email inválido ou não verificado");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         Optional<Profissional> profissionalOpt =
@@ -193,15 +205,19 @@ public class ProfissionalController {
         Profissional profissional;
         if (profissionalOpt.isPresent()) {
             profissional = profissionalOpt.get();
+            logger.info("Profissional encontrado: {}", profissional.getId());
         } else {
+            logger.info("Profissional não encontrado, iniciando auto-onboarding");
             // Se googleAutoOnboardingDefaultHospitalId <= 0 e não existe hospital padrão fixo, cria com 1
             if (googleAutoOnboardingDefaultHospitalId == null || googleAutoOnboardingDefaultHospitalId <= 0L) {
                  // Fallback para hospital 1 se a configuração estiver faltando
+                 logger.warn("Hospital ID padrão não configurado, usando fallback 1");
                  googleAutoOnboardingDefaultHospitalId = 1L;
             }
 
             int atIndex = email.indexOf('@');
             if (atIndex < 0) {
+                logger.warn("Email sem @");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             String domain = email.substring(atIndex + 1).toLowerCase();
@@ -212,6 +228,7 @@ public class ProfissionalController {
                 String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
                 if (!domain.equals(configuredDomain)) {
                      // Retorna erro se o domínio for exigido e não bater
+                    logger.warn("Domínio inválido. Esperado: {}, Recebido: {}", configuredDomain, domain);
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
                 }
             }
@@ -249,6 +266,7 @@ public class ProfissionalController {
             novo.setAtivo(true);
             novo.setPerfil("MEDICO");
             profissional = profissionalRepository.save(novo);
+            logger.info("Novo profissional criado: {}", profissional.getId());
         }
         LoginResponse response = new LoginResponse();
         response.id = profissional.getId();
