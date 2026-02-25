@@ -557,6 +557,7 @@ function App() {
               <input
                 id="login-email"
                 type="email"
+                autoComplete="username"
                 className="login-input"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
