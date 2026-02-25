@@ -17,9 +17,10 @@ services:
         sync: false
 
   # Serviço do Frontend (React/Vite)
-  - type: static
+  - type: site
     name: escala-frontend
     env: static
+    plan: free
     buildCommand: cd escala-frontend && npm install && npm run build
     publishDir: escala-frontend/dist
     branch: main
