@@ -570,6 +570,7 @@ function App() {
               <input
                 id="login-senha"
                 type="password"
+                autoComplete="current-password"
                 className="login-input"
                 value={loginSenha}
                 onChange={(e) => setLoginSenha(e.target.value)}
