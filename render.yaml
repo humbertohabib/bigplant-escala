@@ -3,7 +3,7 @@ services:
   - type: web
     name: escala-backend
     runtime: docker
-    dockerContext: escala-backend
+    rootDir: escala-backend
     plan: free
     branch: main
     envVars:
@@ -20,8 +20,9 @@ services:
   - type: web
     name: escala-frontend
     runtime: static
-    buildCommand: cd escala-frontend && npm install && npm run build
-    staticPublishPath: escala-frontend/dist
+    rootDir: escala-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     branch: main
     routes:
       - type: rewrite
