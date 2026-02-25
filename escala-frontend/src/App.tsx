@@ -529,15 +529,16 @@ function App() {
 
   if (!usuarioLogado) {
     return (
-      <div className="login-page">
-        <div className="login-card">
-          <div className="login-brand">
+      <div className="login-container">
+        <div className="login-content">
+          <div className="login-brand-section">
             <div className="login-badge">BigPlant</div>
-            <h1 className="login-title">Portal de Escalas</h1>
+            <h1 className="login-title">Bem-vindo de volta</h1>
             <p className="login-subtitle">
-              Acesse o painel profissional para gerir plantões e trocas com segurança.
+              Faça login para gerenciar suas escalas e plantões.
             </p>
           </div>
+
           <form className="login-form" onSubmit={realizarLogin}>
             <div>
               <label className="login-label" htmlFor="login-email">
@@ -565,20 +566,39 @@ function App() {
                 placeholder="Digite sua senha"
               />
             </div>
+            
             {loginErro && <div className="login-error">{loginErro}</div>}
+            
             <button type="submit" className="login-button">
               Entrar no painel
             </button>
-            <div style={{ marginTop: '1rem' }}>
-              <div id="google-login-button" />
+            
+            <div className="login-divider">
+              <span>ou entre com</span>
             </div>
-            <div className="login-meta">
-              <span>Ambiente seguro para profissionais de saúde</span>
-              <a className="login-link" href="#">
-                Precisa de acesso?
-              </a>
+
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+               <div id="google-login-button" />
+            </div>
+
+            <div className="login-footer">
+              <p>
+                Não tem acesso?{' '}
+                <a href="#" className="login-link">
+                  Solicite ao administrador
+                </a>
+              </p>
             </div>
           </form>
+        </div>
+        
+        <div className="login-hero">
+          <div className="hero-content">
+            <h2>Gestão Inteligente de Escalas</h2>
+            <p>
+              Otimize a organização de plantões, trocas e disponibilidades da sua equipe médica em um só lugar.
+            </p>
+          </div>
         </div>
       </div>
     )
