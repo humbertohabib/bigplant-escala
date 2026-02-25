@@ -33,6 +33,6 @@ services:
         fromService:
           type: web
           name: escala-backend
-          property: url
+          property: host
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false

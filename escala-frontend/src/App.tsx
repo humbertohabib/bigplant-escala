@@ -132,7 +132,12 @@ type Aba =
   | 'locais'
 
 function App() {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+  const API_URL_ENV = import.meta.env.VITE_API_URL
+  const API_BASE_URL = API_URL_ENV
+    ? API_URL_ENV.startsWith('http')
+      ? API_URL_ENV
+      : `https://${API_URL_ENV}`
+    : 'http://localhost:8080'
 
   const [carregando, setCarregando] = useState(false)
   const [escala, setEscala] = useState<Escala | null>(null)
