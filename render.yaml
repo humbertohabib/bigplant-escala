@@ -40,6 +40,6 @@ services:
         fromService:
           type: web
           name: escala-backend
-          property: host
+          envVarKey: RENDER_EXTERNAL_URL
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
