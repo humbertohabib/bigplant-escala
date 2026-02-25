@@ -194,11 +194,10 @@ public class ProfissionalController {
         if (profissionalOpt.isPresent()) {
             profissional = profissionalOpt.get();
         } else {
-            // Se googleAutoOnboardingDefaultHospitalId <= 0, não cria automaticamente
+            // Se googleAutoOnboardingDefaultHospitalId <= 0 e não existe hospital padrão fixo, cria com 1
             if (googleAutoOnboardingDefaultHospitalId == null || googleAutoOnboardingDefaultHospitalId <= 0L) {
-                 // Pode ser necessário definir um ID padrão via env var ou código, 
-                 // mas por segurança bloqueia se não houver um hospital padrão
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                 // Fallback para hospital 1 se a configuração estiver faltando
+                 googleAutoOnboardingDefaultHospitalId = 1L;
             }
 
             int atIndex = email.indexOf('@');
@@ -242,7 +241,11 @@ public class ProfissionalController {
             novo.setNome(nome);
             novo.setCrm("");
             novo.setEmail(email);
-            novo.setIdHospital(googleAutoOnboardingDefaultHospitalId);
+            // Garante que o ID do hospital seja sempre válido, padrão 1 se não definido
+            Long hospitalId = googleAutoOnboardingDefaultHospitalId != null && googleAutoOnboardingDefaultHospitalId > 0 
+                ? googleAutoOnboardingDefaultHospitalId 
+                : 1L;
+            novo.setIdHospital(hospitalId);
             novo.setAtivo(true);
             novo.setPerfil("MEDICO");
             profissional = profissionalRepository.save(novo);
