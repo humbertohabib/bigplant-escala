@@ -265,11 +265,13 @@ function App() {
                 },
               )
               if (resposta.status === 401) {
-                setLoginErro('Conta Google não autorizada ou falha na validação')
+                const erroTexto = await resposta.text()
+                setLoginErro(`Não autorizado: ${erroTexto || 'Conta Google não autorizada ou falha na validação'}`)
                 return
               }
               if (!resposta.ok) {
-                throw new Error('Erro ao autenticar com Google. Tente novamente.')
+                const erroTexto = await resposta.text()
+                throw new Error(`Erro ao autenticar com Google: ${erroTexto}`)
               }
               const dados: UsuarioAutenticado = await resposta.json()
               setUsuarioLogado(dados)

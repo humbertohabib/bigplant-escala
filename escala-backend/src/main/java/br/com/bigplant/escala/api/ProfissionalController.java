@@ -165,15 +165,15 @@ public class ProfissionalController {
     }
 
     @PostMapping("/login/google")
-    public ResponseEntity<LoginResponse> loginGoogle(@RequestBody GoogleLoginRequest request) {
+    public ResponseEntity<?> loginGoogle(@RequestBody GoogleLoginRequest request) {
         logger.info("Recebendo requisição de login Google");
         if (request == null || request.idToken == null || request.idToken.isBlank()) {
             logger.warn("Token Google vazio ou requisição nula");
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("Token Google vazio ou requisição nula");
         }
         if (googleClientId == null || googleClientId.isBlank()) {
             logger.error("Google Client ID não configurado no backend");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Google Client ID não configurado no backend");
         }
         GoogleIdToken idToken;
         try {
@@ -185,11 +185,11 @@ public class ProfissionalController {
             idToken = verifier.verify(request.idToken);
         } catch (GeneralSecurityException | IOException e) {
             logger.error("Erro ao verificar token Google", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro ao verificar token: " + e.getMessage());
         }
         if (idToken == null) {
             logger.warn("Token Google inválido (idToken null após verify)");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token Google inválido (assinatura ou audience incorretos)");
         }
         Payload payload = idToken.getPayload();
         String email = payload.getEmail();
@@ -198,7 +198,7 @@ public class ProfissionalController {
         
         if (email == null || email.isBlank() || emailVerified == null || !emailVerified) {
             logger.warn("Email inválido ou não verificado");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email inválido ou não verificado pelo Google");
         }
         Optional<Profissional> profissionalOpt =
                 profissionalRepository.findByEmailAndAtivoTrue(email);
@@ -218,7 +218,7 @@ public class ProfissionalController {
             int atIndex = email.indexOf('@');
             if (atIndex < 0) {
                 logger.warn("Email sem @");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email inválido (formato incorreto)");
             }
             String domain = email.substring(atIndex + 1).toLowerCase();
             
@@ -229,7 +229,7 @@ public class ProfissionalController {
                 if (!domain.equals(configuredDomain)) {
                      // Retorna erro se o domínio for exigido e não bater
                     logger.warn("Domínio inválido. Esperado: {}, Recebido: {}", configuredDomain, domain);
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Domínio de email não autorizado: " + domain);
                 }
             }
             
