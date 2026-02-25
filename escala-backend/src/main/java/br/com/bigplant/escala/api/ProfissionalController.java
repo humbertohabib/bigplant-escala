@@ -226,7 +226,8 @@ public class ProfissionalController {
             // Se não estiver configurado (ou for nulo/vazio), permite qualquer domínio.
             if (googleAutoOnboardingDomain != null && !googleAutoOnboardingDomain.isBlank()) {
                 String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
-                if (!domain.equals(configuredDomain)) {
+                // Permite o domínio configurado OU gmail.com para facilitar testes/acesso pessoal
+                if (!domain.equals(configuredDomain) && !domain.equals("gmail.com")) {
                      // Retorna erro se o domínio for exigido e não bater
                     logger.warn("Domínio inválido. Esperado: {}, Recebido: {}", configuredDomain, domain);
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Domínio de email não autorizado: " + domain);
