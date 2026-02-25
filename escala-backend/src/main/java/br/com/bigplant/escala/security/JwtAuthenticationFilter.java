@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class JwtAuthenticationFilter implements Filter {
 
     private final JwtService jwtService;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
@@ -28,6 +29,8 @@ public class JwtAuthenticationFilter implements Filter {
         String path = httpRequest.getRequestURI();
         String method = httpRequest.getMethod();
 
+        logger.info("Request recebido no filtro. Method: {}, Path: {}", method, path);
+
         if ("OPTIONS".equalsIgnoreCase(method)) {
             chain.doFilter(request, response);
             return;
@@ -35,12 +38,14 @@ public class JwtAuthenticationFilter implements Filter {
 
         if (!path.startsWith("/api/")
                 || path.equals("/api/profissionais/login")
-                || path.equals("/api/profissionais/login/google")) {
+                || path.startsWith("/api/profissionais/login/google")) {
+            logger.info("Rota pública permitida: {}", path);
             chain.doFilter(request, response);
             return;
         }
         String authorization = httpRequest.getHeader("Authorization");
         if (authorization == null || !authorization.startsWith("Bearer ")) {
+            logger.warn("Token ausente ou mal formatado. Header: {}", authorization);
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
@@ -49,6 +54,7 @@ public class JwtAuthenticationFilter implements Filter {
         try {
             decoded = jwtService.validarToken(token);
         } catch (Exception e) {
+            logger.warn("Token inválido: {}", e.getMessage());
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
