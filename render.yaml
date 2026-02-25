@@ -16,11 +16,9 @@ services:
       - key: GOOGLE_AUTO_ONBOARDING_HOSPITAL_ID
         sync: false
 
-  # Serviço do Frontend (React/Vite)
-  - type: site
-    name: escala-frontend
-    env: static
-    plan: free
+# Serviço do Frontend (React/Vite)
+staticSites:
+  - name: escala-frontend
     buildCommand: cd escala-frontend && npm install && npm run build
     publishDir: escala-frontend/dist
     branch: main
