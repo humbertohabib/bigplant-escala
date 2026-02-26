@@ -217,6 +217,13 @@ public class ProfissionalController {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário inativo. Contate o administrador.");
                 }
                 logger.info("Profissional encontrado: {}", profissional.getId());
+                
+                // Atualiza foto se veio do Google
+                String foto = (String) payload.get("picture");
+                if (foto != null && (profissional.getFotoPerfil() == null || profissional.getFotoPerfil().isBlank())) {
+                    profissional.setFotoPerfil(foto);
+                    profissionalRepository.save(profissional);
+                }
             } else {
                 logger.info("Profissional não encontrado, iniciando auto-onboarding");
                 // Se googleAutoOnboardingDefaultHospitalId <= 0 e não existe hospital padrão fixo, cria com 1
@@ -239,7 +246,7 @@ public class ProfissionalController {
                     String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
                     // Permite o domínio configurado OU gmail.com para facilitar testes/acesso pessoal
                     if (!domain.equals(configuredDomain) && !domain.equals("gmail.com")) {
-                         // Retorna erro se o domínio for exigido e não bater
+                        // Retorna erro se o domínio for exigido e não bater
                         logger.warn("Domínio inválido. Esperado: {}, Recebido: {}", configuredDomain, domain);
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Domínio de email não autorizado: " + domain);
                     }
@@ -283,13 +290,6 @@ public class ProfissionalController {
                 }
                 profissional = profissionalRepository.save(novo);
                 logger.info("Novo profissional criado: {}", profissional.getId());
-            } else {
-                // Atualiza foto se veio do Google
-                String foto = (String) payload.get("picture");
-                if (foto != null && (profissional.getFotoPerfil() == null || profissional.getFotoPerfil().isBlank())) {
-                    profissional.setFotoPerfil(foto);
-                    profissionalRepository.save(profissional);
-                }
             }
             LoginResponse response = new LoginResponse();
             response.id = profissional.getId();
