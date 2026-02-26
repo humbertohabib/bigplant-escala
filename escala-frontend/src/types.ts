@@ -69,6 +69,9 @@ export type LocalAtendimento = {
   pais?: string
   complemento?: string
   telefoneContato?: string
+  instituicao?: InstituicaoOrganizacional | null
+  setor?: string
+  sala?: string
 }
 
 export type TrocaPlantao = {

@@ -4,6 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 @Entity
@@ -17,6 +19,14 @@ public class LocalAtendimento {
     private String nome;
 
     private Long idHospital;
+
+    @ManyToOne
+    @JoinColumn(name = "id_instituicao")
+    private InstituicaoOrganizacional instituicao;
+
+    private String setor;
+
+    private String sala;
 
     private Boolean ativo;
 
@@ -120,5 +130,29 @@ public class LocalAtendimento {
 
     public void setTelefoneContato(String telefoneContato) {
         this.telefoneContato = telefoneContato;
+    }
+
+    public InstituicaoOrganizacional getInstituicao() {
+        return instituicao;
+    }
+
+    public void setInstituicao(InstituicaoOrganizacional instituicao) {
+        this.instituicao = instituicao;
+    }
+
+    public String getSetor() {
+        return setor;
+    }
+
+    public void setSetor(String setor) {
+        this.setor = setor;
+    }
+
+    public String getSala() {
+        return sala;
+    }
+
+    public void setSala(String sala) {
+        this.sala = sala;
     }
 }

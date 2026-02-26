@@ -12,7 +12,7 @@ import {
   Loader2,
   Navigation
 } from 'lucide-react'
-import type { LocalAtendimento, UsuarioAutenticado } from '../../types'
+import type { LocalAtendimento, UsuarioAutenticado, InstituicaoOrganizacional } from '../../types'
 
 interface Props {
   locais: LocalAtendimento[]
@@ -31,6 +31,7 @@ export function GerenciadorLocais({
   authFetch,
   setErro
 }: Props) {
+  const [instituicoes, setInstituicoes] = useState<InstituicaoOrganizacional[]>([])
   const [termoBusca, setTermoBusca] = useState('')
   const [modalAberto, setModalAberto] = useState(false)
   const [carregando, setCarregando] = useState(false)
@@ -49,17 +50,30 @@ export function GerenciadorLocais({
     pais: '',
     complemento: '',
     telefoneContato: '',
+    setor: '',
+    sala: '',
+    instituicao: null
   })
 
   // Carregar dados ao montar
   useEffect(() => {
-    const carregarLocais = async () => {
+    const carregarDados = async () => {
       setCarregando(true)
       try {
-        const resposta = await authFetch(`${apiBaseUrl}/api/locais`)
-        if (!resposta.ok) throw new Error('Erro ao carregar locais')
-        const dados = await resposta.json()
-        setLocais(dados)
+        const [resLocais, resInstituicoes] = await Promise.all([
+          authFetch(`${apiBaseUrl}/api/locais`),
+          authFetch(`${apiBaseUrl}/api/instituicoes/ativas`)
+        ])
+
+        if (!resLocais.ok) throw new Error('Erro ao carregar locais')
+        
+        const dadosLocais = await resLocais.json()
+        setLocais(dadosLocais)
+
+        if (resInstituicoes.ok) {
+          const dadosInstituicoes = await resInstituicoes.json()
+          setInstituicoes(dadosInstituicoes)
+        }
       } catch (e) {
         setErro((e as Error).message)
       } finally {
@@ -67,7 +81,7 @@ export function GerenciadorLocais({
       }
     }
 
-    carregarLocais()
+    carregarDados()
   }, [apiBaseUrl, authFetch, setLocais, setErro])
 
   // Filtrar locais
@@ -115,6 +129,9 @@ export function GerenciadorLocais({
       pais: '',
       complemento: '',
       telefoneContato: '',
+      setor: '',
+      sala: '',
+      instituicao: null
     })
     setModalAberto(true)
     setErro(null)
@@ -311,8 +328,8 @@ export function GerenciadorLocais({
                     <Building2 size={14} /> Dados Básicos
                   </h4>
                   
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Local *</label>
                       <input
                         required
@@ -324,7 +341,47 @@ export function GerenciadorLocais({
                       />
                     </div>
 
-                    <div>
+                    <div className="col-span-2 md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Instituição</label>
+                      <select
+                        value={novoLocal.instituicao?.id || ''}
+                        onChange={(e) => {
+                          const id = Number(e.target.value)
+                          const inst = instituicoes.find(i => i.id === id) || null
+                          setNovoLocal({ ...novoLocal, instituicao: inst })
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      >
+                        <option value="">Selecione...</option>
+                        {instituicoes.map(inst => (
+                          <option key={inst.id} value={inst.id}>{inst.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="col-span-2 md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Setor</label>
+                      <input
+                        type="text"
+                        value={novoLocal.setor || ''}
+                        onChange={(e) => setNovoLocal({ ...novoLocal, setor: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        placeholder="Ex: Emergência"
+                      />
+                    </div>
+
+                    <div className="col-span-2 md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sala</label>
+                      <input
+                        type="text"
+                        value={novoLocal.sala || ''}
+                        onChange={(e) => setNovoLocal({ ...novoLocal, sala: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        placeholder="Ex: 101"
+                      />
+                    </div>
+
+                    <div className="col-span-2 md:col-span-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                       <div className="flex items-center gap-4 h-[42px]">
                         <label className="flex items-center gap-2 cursor-pointer">

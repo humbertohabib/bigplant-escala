@@ -66,6 +66,9 @@ public class LocalAtendimentoController {
                     existente.setPais(localAtendimento.getPais());
                     existente.setComplemento(localAtendimento.getComplemento());
                     existente.setTelefoneContato(localAtendimento.getTelefoneContato());
+                    existente.setInstituicao(localAtendimento.getInstituicao());
+                    existente.setSetor(localAtendimento.getSetor());
+                    existente.setSala(localAtendimento.getSala());
                     LocalAtendimento salvo = localAtendimentoRepository.save(existente);
                     return ResponseEntity.ok(salvo);
                 })
