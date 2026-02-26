@@ -37,7 +37,7 @@ public class RelatorioService {
                 turnoRepository.findByIdHospitalAndDataBetween(idHospital, inicio, fim);
         Map<Long, AcumuladorProfissional> acumulado = new HashMap<>();
         for (Turno t : turnos) {
-            if (t.getIdProfissional() == null) {
+            if (t.getIdProfissional() == null || t.getHoraInicio() == null || t.getHoraFim() == null) {
                 continue;
             }
             if (tipoTurno != null
