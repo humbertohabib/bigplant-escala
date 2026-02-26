@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { DashboardLayout } from './components/layout/DashboardLayout'
 import { CalendarioEscala } from './components/calendar/CalendarioEscala'
 import { GerenciadorDisponibilidade } from './components/availability/GerenciadorDisponibilidade'
@@ -159,13 +159,13 @@ function App() {
     }
   }, [usuarioLogado])
 
-  const authFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+  const authFetch = useCallback((input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers || {})
     if (usuarioLogado?.token) {
       headers.set('Authorization', `Bearer ${usuarioLogado.token}`)
     }
     return fetch(input, { ...init, headers })
-  }
+  }, [usuarioLogado?.token])
 
   const gerarEscala = async () => {
     try {
