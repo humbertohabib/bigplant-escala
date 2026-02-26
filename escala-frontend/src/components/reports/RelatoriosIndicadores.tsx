@@ -324,7 +324,7 @@ export function RelatoriosIndicadores({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {resumoProfissionaisLista.map((item, idx) => {
+                  {resumoProfissionaisLista.map((item) => {
                     const profissional = profissionais.find(p => p.id === item.idProfissional)
                     const excedeuCarga = profissional?.cargaHorariaMensalMaxima != null && item.horasProjecao30Dias > profissional.cargaHorariaMensalMaxima
                     const abaixoMinima = profissional?.cargaHorariaMensalMinima != null && item.horasProjecao30Dias < profissional.cargaHorariaMensalMinima
