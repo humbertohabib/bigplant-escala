@@ -121,6 +121,12 @@ export type IndicadoresTrocaPeriodo = {
   porProfissional: ResumoTrocasProfissional[]
 }
 
+export type InstituicaoOrganizacional = {
+  id?: number
+  nome: string
+  ativo?: boolean | null
+}
+
 export type Aba =
   | 'escala'
   | 'profissionais'
@@ -130,4 +136,5 @@ export type Aba =
   | 'locais'
   | 'trocas'
   | 'relatorios'
+  | 'instituicoes'
   | 'restricted'

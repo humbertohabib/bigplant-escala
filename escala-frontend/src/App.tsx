@@ -6,6 +6,7 @@ import { GerenciadorDisponibilidade } from './components/availability/Gerenciado
 import { GerenciadorTrocas } from './components/exchange/GerenciadorTrocas'
 import { GerenciadorProfissionais } from './components/professionals/GerenciadorProfissionais'
 import { GerenciadorLocais } from './components/locations/GerenciadorLocais'
+import { GerenciadorInstituicoes } from './components/institutions/GerenciadorInstituicoes'
 import { RelatoriosIndicadores } from './components/reports/RelatoriosIndicadores'
 import type {
   Turno,
@@ -747,6 +748,15 @@ function App() {
         <GerenciadorLocais
           locais={locais}
           setLocais={setLocais}
+          usuarioLogado={usuarioLogado!}
+          apiBaseUrl={API_BASE_URL}
+          authFetch={authFetch}
+          setErro={setErro}
+        />
+      )}
+
+      {aba === 'instituicoes' && (
+        <GerenciadorInstituicoes
           usuarioLogado={usuarioLogado!}
           apiBaseUrl={API_BASE_URL}
           authFetch={authFetch}

@@ -9,7 +9,8 @@ import {
   MapPin,
   FileText,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  Building2
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -95,6 +96,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <MapPin size={20} />
             <span>Locais</span>
+          </button>
+        )}
+
+        {isAdmin && (
+          <button
+            className={`nav-item ${abaAtual === 'instituicoes' ? 'active' : ''}`}
+            onClick={() => setAba('instituicoes')}
+          >
+            <Building2 size={20} />
+            <span>Instituições</span>
           </button>
         )}
 

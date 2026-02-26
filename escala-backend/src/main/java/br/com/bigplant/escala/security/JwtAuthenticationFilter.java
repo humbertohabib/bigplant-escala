@@ -98,6 +98,11 @@ public class JwtAuthenticationFilter implements Filter {
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
+            } else if (path.startsWith("/api/instituicoes")) {
+                if (!admin) {
+                    httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
             }
         }
         httpRequest.setAttribute("usuarioId", decoded.getSubject());

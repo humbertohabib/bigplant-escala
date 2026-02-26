@@ -27,6 +27,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       case 'turnos': return 'Gestão de Turnos'
       case 'trocas': return 'Trocas de Plantão'
       case 'locais': return 'Locais de Atendimento'
+      case 'instituicoes': return 'Instituições Organizacionais'
       case 'relatorios': return 'Relatórios e Indicadores'
       default: return 'Dashboard'
     }
