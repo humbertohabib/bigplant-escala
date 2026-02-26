@@ -79,7 +79,7 @@ export function GerenciadorProfissionais({
   // Filtrar profissionais
   const profissionaisFiltrados = profissionais.filter(p => 
     p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    p.crm.toLowerCase().includes(termoBusca.toLowerCase()) ||
+    (p.crm && p.crm.toLowerCase().includes(termoBusca.toLowerCase())) ||
     (p.email && p.email.toLowerCase().includes(termoBusca.toLowerCase()))
   )
 

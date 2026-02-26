@@ -27,8 +27,8 @@ export type Profissional = {
   nome: string
   crm?: string
   idHospital: number
-  cargaHorariaMensalMaxima: number
-  cargaHorariaMensalMinima: number
+  cargaHorariaMensalMaxima?: number | null
+  cargaHorariaMensalMinima?: number | null
   ativo?: boolean | null
   email?: string
   telefoneWhatsapp?: string
@@ -91,7 +91,7 @@ export type UsuarioAutenticado = {
   id: number
   nome: string
   email: string
-  perfil: 'ADMIN' | 'COORDENADOR' | 'SECRETARIO' | 'USUARIO'
+  perfil: 'ADMIN' | 'COORDENADOR' | 'SECRETARIO' | 'USUARIO' | 'MEDICO'
   token: string
   fotoPerfil?: string
 }
