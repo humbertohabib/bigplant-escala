@@ -11,5 +11,7 @@ public interface ProfissionalRepository extends JpaRepository<Profissional, Long
 
     List<Profissional> findByIdHospitalAndAtivoTrue(Long idHospital);
 
+    Optional<Profissional> findByEmail(String email);
+
     Optional<Profissional> findByEmailAndAtivoTrue(String email);
 }

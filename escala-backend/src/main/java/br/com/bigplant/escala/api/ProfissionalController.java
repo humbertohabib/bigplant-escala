@@ -166,118 +166,129 @@ public class ProfissionalController {
 
     @PostMapping("/login/google")
     public ResponseEntity<?> loginGoogle(@RequestBody GoogleLoginRequest request) {
-        logger.info("Recebendo requisição de login Google");
-        if (request == null || request.idToken == null || request.idToken.isBlank()) {
-            logger.warn("Token Google vazio ou requisição nula");
-            return ResponseEntity.badRequest().body("Token Google vazio ou requisição nula");
-        }
-        if (googleClientId == null || googleClientId.isBlank()) {
-            logger.error("Google Client ID não configurado no backend");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Google Client ID não configurado no backend");
-        }
-        GoogleIdToken idToken;
         try {
-            GoogleIdTokenVerifier verifier =
-                    new GoogleIdTokenVerifier.Builder(
-                                    new NetHttpTransport(), JacksonFactory.getDefaultInstance())
-                            .setAudience(Collections.singletonList(googleClientId))
-                            .build();
-            idToken = verifier.verify(request.idToken);
-        } catch (GeneralSecurityException | IOException e) {
-            logger.error("Erro ao verificar token Google", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro ao verificar token: " + e.getMessage());
-        }
-        if (idToken == null) {
-            logger.warn("Token Google inválido (idToken null após verify)");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token Google inválido (assinatura ou audience incorretos)");
-        }
-        Payload payload = idToken.getPayload();
-        String email = payload.getEmail();
-        Boolean emailVerified = (Boolean) payload.get("email_verified");
-        logger.info("Token verificado. Email: {}, Verified: {}", email, emailVerified);
-        
-        if (email == null || email.isBlank() || emailVerified == null || !emailVerified) {
-            logger.warn("Email inválido ou não verificado");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email inválido ou não verificado pelo Google");
-        }
-        Optional<Profissional> profissionalOpt =
-                profissionalRepository.findByEmailAndAtivoTrue(email);
-        Profissional profissional;
-        if (profissionalOpt.isPresent()) {
-            profissional = profissionalOpt.get();
-            logger.info("Profissional encontrado: {}", profissional.getId());
-        } else {
-            logger.info("Profissional não encontrado, iniciando auto-onboarding");
-            // Se googleAutoOnboardingDefaultHospitalId <= 0 e não existe hospital padrão fixo, cria com 1
-            if (googleAutoOnboardingDefaultHospitalId == null || googleAutoOnboardingDefaultHospitalId <= 0L) {
-                 // Fallback para hospital 1 se a configuração estiver faltando
-                 logger.warn("Hospital ID padrão não configurado, usando fallback 1");
-                 googleAutoOnboardingDefaultHospitalId = 1L;
+            logger.info("Recebendo requisição de login Google");
+            if (request == null || request.idToken == null || request.idToken.isBlank()) {
+                logger.warn("Token Google vazio ou requisição nula");
+                return ResponseEntity.badRequest().body("Token Google vazio ou requisição nula");
             }
-
-            int atIndex = email.indexOf('@');
-            if (atIndex < 0) {
-                logger.warn("Email sem @");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email inválido (formato incorreto)");
+            if (googleClientId == null || googleClientId.isBlank()) {
+                logger.error("Google Client ID não configurado no backend");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Google Client ID não configurado no backend");
             }
-            String domain = email.substring(atIndex + 1).toLowerCase();
+            GoogleIdToken idToken;
+            try {
+                GoogleIdTokenVerifier verifier =
+                        new GoogleIdTokenVerifier.Builder(
+                                        new NetHttpTransport(), JacksonFactory.getDefaultInstance())
+                                .setAudience(Collections.singletonList(googleClientId))
+                                .build();
+                idToken = verifier.verify(request.idToken);
+            } catch (GeneralSecurityException | IOException e) {
+                logger.error("Erro ao verificar token Google", e);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro ao verificar token: " + e.getMessage());
+            }
+            if (idToken == null) {
+                logger.warn("Token Google inválido (idToken null após verify)");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token Google inválido (assinatura ou audience incorretos)");
+            }
+            Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            Boolean emailVerified = (Boolean) payload.get("email_verified");
+            logger.info("Token verificado. Email: {}, Verified: {}", email, emailVerified);
             
-            // Validação de domínio opcional: se googleAutoOnboardingDomain estiver configurado, valida.
-            // Se não estiver configurado (ou for nulo/vazio), permite qualquer domínio.
-            if (googleAutoOnboardingDomain != null && !googleAutoOnboardingDomain.isBlank()) {
-                String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
-                // Permite o domínio configurado OU gmail.com para facilitar testes/acesso pessoal
-                if (!domain.equals(configuredDomain) && !domain.equals("gmail.com")) {
-                     // Retorna erro se o domínio for exigido e não bater
-                    logger.warn("Domínio inválido. Esperado: {}, Recebido: {}", configuredDomain, domain);
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Domínio de email não autorizado: " + domain);
-                }
+            if (email == null || email.isBlank() || emailVerified == null || !emailVerified) {
+                logger.warn("Email inválido ou não verificado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email inválido ou não verificado pelo Google");
             }
             
-            Profissional novo = new Profissional();
-            String nome = (String) payload.get("name");
-            if (nome == null || nome.isBlank()) {
-                String givenName = (String) payload.get("given_name");
-                String familyName = (String) payload.get("family_name");
-                StringBuilder sb = new StringBuilder();
-                if (givenName != null && !givenName.isBlank()) {
-                    sb.append(givenName);
+            Optional<Profissional> profissionalOpt = profissionalRepository.findByEmail(email);
+            Profissional profissional;
+            
+            if (profissionalOpt.isPresent()) {
+                profissional = profissionalOpt.get();
+                if (Boolean.FALSE.equals(profissional.getAtivo())) {
+                    logger.warn("Tentativa de login de usuário inativo: {}", email);
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário inativo. Contate o administrador.");
                 }
-                if (familyName != null && !familyName.isBlank()) {
-                    if (sb.length() > 0) {
-                        sb.append(" ");
+                logger.info("Profissional encontrado: {}", profissional.getId());
+            } else {
+                logger.info("Profissional não encontrado, iniciando auto-onboarding");
+                // Se googleAutoOnboardingDefaultHospitalId <= 0 e não existe hospital padrão fixo, cria com 1
+                if (googleAutoOnboardingDefaultHospitalId == null || googleAutoOnboardingDefaultHospitalId <= 0L) {
+                     // Fallback para hospital 1 se a configuração estiver faltando
+                     logger.warn("Hospital ID padrão não configurado, usando fallback 1");
+                     googleAutoOnboardingDefaultHospitalId = 1L;
+                }
+    
+                int atIndex = email.indexOf('@');
+                if (atIndex < 0) {
+                    logger.warn("Email sem @");
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email inválido (formato incorreto)");
+                }
+                String domain = email.substring(atIndex + 1).toLowerCase();
+                
+                // Validação de domínio opcional: se googleAutoOnboardingDomain estiver configurado, valida.
+                // Se não estiver configurado (ou for nulo/vazio), permite qualquer domínio.
+                if (googleAutoOnboardingDomain != null && !googleAutoOnboardingDomain.isBlank()) {
+                    String configuredDomain = googleAutoOnboardingDomain.toLowerCase();
+                    // Permite o domínio configurado OU gmail.com para facilitar testes/acesso pessoal
+                    if (!domain.equals(configuredDomain) && !domain.equals("gmail.com")) {
+                         // Retorna erro se o domínio for exigido e não bater
+                        logger.warn("Domínio inválido. Esperado: {}, Recebido: {}", configuredDomain, domain);
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Domínio de email não autorizado: " + domain);
                     }
-                    sb.append(familyName);
                 }
-                if (sb.length() > 0) {
-                    nome = sb.toString();
+                
+                Profissional novo = new Profissional();
+                String nome = (String) payload.get("name");
+                if (nome == null || nome.isBlank()) {
+                    String givenName = (String) payload.get("given_name");
+                    String familyName = (String) payload.get("family_name");
+                    StringBuilder sb = new StringBuilder();
+                    if (givenName != null && !givenName.isBlank()) {
+                        sb.append(givenName);
+                    }
+                    if (familyName != null && !familyName.isBlank()) {
+                        if (sb.length() > 0) {
+                            sb.append(" ");
+                        }
+                        sb.append(familyName);
+                    }
+                    if (sb.length() > 0) {
+                        nome = sb.toString();
+                    }
                 }
+                if (nome == null || nome.isBlank()) {
+                    nome = email;
+                }
+                novo.setNome(nome);
+                novo.setCrm("");
+                novo.setEmail(email);
+                // Garante que o ID do hospital seja sempre válido, padrão 1 se não definido
+                Long hospitalId = googleAutoOnboardingDefaultHospitalId != null && googleAutoOnboardingDefaultHospitalId > 0 
+                    ? googleAutoOnboardingDefaultHospitalId 
+                    : 1L;
+                novo.setIdHospital(hospitalId);
+                novo.setAtivo(true);
+                novo.setPerfil("USUARIO");
+                profissional = profissionalRepository.save(novo);
+                logger.info("Novo profissional criado: {}", profissional.getId());
             }
-            if (nome == null || nome.isBlank()) {
-                nome = email;
-            }
-            novo.setNome(nome);
-            novo.setCrm("");
-            novo.setEmail(email);
-            // Garante que o ID do hospital seja sempre válido, padrão 1 se não definido
-            Long hospitalId = googleAutoOnboardingDefaultHospitalId != null && googleAutoOnboardingDefaultHospitalId > 0 
-                ? googleAutoOnboardingDefaultHospitalId 
-                : 1L;
-            novo.setIdHospital(hospitalId);
-            novo.setAtivo(true);
-            novo.setPerfil("USUARIO");
-            profissional = profissionalRepository.save(novo);
-            logger.info("Novo profissional criado: {}", profissional.getId());
+            LoginResponse response = new LoginResponse();
+            response.id = profissional.getId();
+            response.nome = profissional.getNome();
+            response.email = profissional.getEmail();
+            response.idHospital = profissional.getIdHospital();
+            String perfil = profissional.getPerfil();
+            response.perfil = perfil != null && !perfil.isBlank() ? perfil : "USUARIO";
+            response.token = jwtService.gerarToken(profissional);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Erro interno no login Google", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro interno no servidor ao processar login Google: " + e.getMessage());
         }
-        LoginResponse response = new LoginResponse();
-        response.id = profissional.getId();
-        response.nome = profissional.getNome();
-        response.email = profissional.getEmail();
-        response.idHospital = profissional.getIdHospital();
-        String perfil = profissional.getPerfil();
-        response.perfil = perfil != null && !perfil.isBlank() ? perfil : "USUARIO";
-        response.token = jwtService.gerarToken(profissional);
-        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
