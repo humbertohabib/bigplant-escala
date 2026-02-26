@@ -34,8 +34,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <LayoutDashboard size={24} />
-        <span>BigPlant Escala</span>
+        {usuario.fotoPerfil ? (
+          <img 
+            src={usuario.fotoPerfil} 
+            alt="Logo" 
+            className="w-8 h-8 rounded-full object-cover border-2 border-white/20"
+          />
+        ) : (
+          <LayoutDashboard size={24} />
+        )}
+        <div className="flex flex-col">
+          <span className="font-bold leading-tight">BigPlant Escala</span>
+          <span className="text-xs opacity-75 font-normal truncate max-w-[140px]" title={usuario.nome}>
+            {usuario.nome}
+          </span>
+        </div>
       </div>
 
       <nav className="sidebar-nav">

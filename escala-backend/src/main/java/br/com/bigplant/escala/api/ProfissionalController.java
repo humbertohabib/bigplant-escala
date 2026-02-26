@@ -66,6 +66,7 @@ public class ProfissionalController {
         public String perfil;
         public Long idHospital;
         public String token;
+        public String fotoPerfil;
     }
 
     public static class GoogleLoginRequest {
@@ -124,6 +125,9 @@ public class ProfissionalController {
                     if (profissional.getPerfil() != null && !profissional.getPerfil().isBlank()) {
                         existente.setPerfil(profissional.getPerfil());
                     }
+                    if (profissional.getFotoPerfil() != null) {
+                        existente.setFotoPerfil(profissional.getFotoPerfil());
+                    }
                     if (profissional.getSenha() != null && !profissional.getSenha().isBlank()) {
                         String hash = BCrypt.hashpw(profissional.getSenha(), BCrypt.gensalt(12));
                         existente.setSenha(hash);
@@ -158,6 +162,7 @@ public class ProfissionalController {
         response.nome = profissional.getNome();
         response.email = profissional.getEmail();
         response.idHospital = profissional.getIdHospital();
+        response.fotoPerfil = profissional.getFotoPerfil();
         String perfil = profissional.getPerfil();
         response.perfil = perfil != null && !perfil.isBlank() ? perfil : "USUARIO";
         response.token = jwtService.gerarToken(profissional);
@@ -272,14 +277,26 @@ public class ProfissionalController {
                 novo.setIdHospital(hospitalId);
                 novo.setAtivo(true);
                 novo.setPerfil("USUARIO");
+                String foto = (String) payload.get("picture");
+                if (foto != null) {
+                    novo.setFotoPerfil(foto);
+                }
                 profissional = profissionalRepository.save(novo);
                 logger.info("Novo profissional criado: {}", profissional.getId());
+            } else {
+                // Atualiza foto se veio do Google
+                String foto = (String) payload.get("picture");
+                if (foto != null && (profissional.getFotoPerfil() == null || profissional.getFotoPerfil().isBlank())) {
+                    profissional.setFotoPerfil(foto);
+                    profissionalRepository.save(profissional);
+                }
             }
             LoginResponse response = new LoginResponse();
             response.id = profissional.getId();
             response.nome = profissional.getNome();
             response.email = profissional.getEmail();
             response.idHospital = profissional.getIdHospital();
+            response.fotoPerfil = profissional.getFotoPerfil();
             String perfil = profissional.getPerfil();
             response.perfil = perfil != null && !perfil.isBlank() ? perfil : "USUARIO";
             response.token = jwtService.gerarToken(profissional);

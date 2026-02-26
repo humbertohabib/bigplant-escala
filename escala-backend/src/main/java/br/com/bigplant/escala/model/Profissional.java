@@ -36,6 +36,8 @@ public class Profissional {
 
     private String perfil;
 
+    private String fotoPerfil;
+
     public Long getId() {
         return id;
     }
@@ -122,5 +124,13 @@ public class Profissional {
 
     public void setPerfil(String perfil) {
         this.perfil = perfil;
+    }
+
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
     }
 }

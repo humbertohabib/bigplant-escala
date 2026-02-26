@@ -25,15 +25,16 @@ export type RegrasConcretas = {
 export type Profissional = {
   id?: number
   nome: string
-  crm: string
+  crm?: string
   idHospital: number
-  cargaHorariaMensalMaxima?: number | null
-  cargaHorariaMensalMinima?: number | null
+  cargaHorariaMensalMaxima: number
+  cargaHorariaMensalMinima: number
   ativo?: boolean | null
-  email?: string | null
-  telefoneWhatsapp?: string | null
-  perfil?: string | null
-  senha?: string | null
+  email?: string
+  telefoneWhatsapp?: string
+  perfil?: string
+  senha?: string
+  fotoPerfil?: string
 }
 
 export type Disponibilidade = {
@@ -87,11 +88,12 @@ export type TrocaPlantao = {
 }
 
 export type UsuarioAutenticado = {
-  token: string
+  id: number
   nome: string
   email: string
-  perfil: string
-  id?: number
+  perfil: 'ADMIN' | 'COORDENADOR' | 'SECRETARIO' | 'USUARIO'
+  token: string
+  fotoPerfil?: string
 }
 
 export type ResumoProfissionalPeriodo = {

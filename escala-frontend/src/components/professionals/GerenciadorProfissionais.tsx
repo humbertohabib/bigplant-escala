@@ -42,13 +42,14 @@ export function GerenciadorProfissionais({
     nome: '',
     crm: '',
     idHospital: 1,
-    cargaHorariaMensalMaxima: null,
-    cargaHorariaMensalMinima: null,
+    cargaHorariaMensalMaxima: 0,
+    cargaHorariaMensalMinima: 0,
     ativo: true,
     email: '',
     telefoneWhatsapp: '',
     perfil: 'MEDICO',
     senha: '',
+    fotoPerfil: ''
   })
 
   // Carregar dados ao montar
@@ -116,13 +117,14 @@ export function GerenciadorProfissionais({
       nome: '',
       crm: '',
       idHospital: 1,
-      cargaHorariaMensalMaxima: null,
-      cargaHorariaMensalMinima: null,
+      cargaHorariaMensalMaxima: 0,
+      cargaHorariaMensalMinima: 0,
       ativo: true,
       email: '',
       telefoneWhatsapp: '',
       perfil: 'MEDICO',
       senha: '',
+      fotoPerfil: ''
     })
     setModalAberto(true)
     setErro(null)
@@ -248,9 +250,17 @@ export function GerenciadorProfissionais({
             <div className="pl-3">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white ${p.ativo ? 'bg-blue-500' : 'bg-gray-400'}`}>
-                    {p.nome.charAt(0).toUpperCase()}
-                  </div>
+                  {p.fotoPerfil ? (
+                    <img 
+                      src={p.fotoPerfil} 
+                      alt={p.nome}
+                      className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white ${p.ativo ? 'bg-blue-500' : 'bg-gray-400'}`}>
+                      {p.nome.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div>
                     <h3 className="font-semibold text-gray-900 line-clamp-1">{p.nome}</h3>
                     <p className="text-xs text-gray-500 font-mono">CRM: {p.crm}</p>
@@ -341,6 +351,17 @@ export function GerenciadorProfissionais({
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Foto do Perfil (URL)</label>
+                      <input
+                        type="text"
+                        value={novoProfissional.fotoPerfil || ''}
+                        onChange={(e) => setNovoProfissional({ ...novoProfissional, fotoPerfil: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        placeholder="https://exemplo.com/foto.jpg"
+                      />
+                    </div>
+
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
                       <input
