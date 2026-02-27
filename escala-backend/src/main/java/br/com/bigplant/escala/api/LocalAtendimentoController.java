@@ -3,6 +3,8 @@ package br.com.bigplant.escala.api;
 import br.com.bigplant.escala.model.LocalAtendimento;
 import br.com.bigplant.escala.repository.LocalAtendimentoRepository;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/locais")
 public class LocalAtendimentoController {
 
+    private static final Logger logger = LoggerFactory.getLogger(LocalAtendimentoController.class);
+
     private final LocalAtendimentoRepository localAtendimentoRepository;
 
     public LocalAtendimentoController(LocalAtendimentoRepository localAtendimentoRepository) {
@@ -25,7 +29,13 @@ public class LocalAtendimentoController {
 
     @GetMapping
     public ResponseEntity<List<LocalAtendimento>> listarTodos() {
-        return ResponseEntity.ok(localAtendimentoRepository.findAll());
+        logger.info("Listando todos os locais de atendimento");
+        try {
+            return ResponseEntity.ok(localAtendimentoRepository.findAll());
+        } catch (Exception e) {
+            logger.error("Erro ao listar locais de atendimento", e);
+            throw e;
+        }
     }
 
     @GetMapping("/hospital/{idHospital}")

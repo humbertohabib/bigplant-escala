@@ -25,6 +25,8 @@ interface DashboardLayoutProps {
   setAba: (aba: Aba) => void
   onLogout: () => void
   onUpdateUser: (usuario: UsuarioAutenticado) => void
+  apiBaseUrl: string
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -33,7 +35,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   abaAtual,
   setAba,
   onLogout,
-  onUpdateUser
+  onUpdateUser,
+  apiBaseUrl,
+  authFetch
 }) => {
   const getHeaderTitle = (aba: Aba) => {
     switch(aba) {
@@ -58,6 +62,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         setAba={setAba}
         onLogout={onLogout}
         onUpdateUser={onUpdateUser}
+        apiBaseUrl={apiBaseUrl}
+        authFetch={authFetch}
       />
       <div className="main-content">
         <header className="top-bar">

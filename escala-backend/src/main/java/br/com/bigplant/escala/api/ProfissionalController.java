@@ -1,6 +1,7 @@
 package br.com.bigplant.escala.api;
 
 import br.com.bigplant.escala.model.Profissional;
+import br.com.bigplant.escala.model.InstituicaoOrganizacional;
 import br.com.bigplant.escala.repository.ProfissionalRepository;
 import br.com.bigplant.escala.security.JwtService;
 import br.com.bigplant.escala.audit.AuditLog;
@@ -84,12 +85,32 @@ public class ProfissionalController {
     @GetMapping("/hospital/{idHospital}")
     public ResponseEntity<List<Profissional>> listarPorHospital(@PathVariable Long idHospital) {
         List<Profissional> profissionais = profissionalRepository.findByIdHospitalAndAtivoTrue(idHospital);
+        
+        // Ocultar dados sensíveis se o usuário não permitir divulgação
+        profissionais.forEach(p -> {
+            if (Boolean.FALSE.equals(p.getDivulgarDados())) {
+                p.setTelefoneWhatsapp(null);
+                p.setEmail(null);
+                // Mantemos nome e foto para identificação na escala, mas ocultamos contato
+            }
+        });
+        
         return ResponseEntity.ok(profissionais);
     }
 
     @GetMapping
     public ResponseEntity<List<Profissional>> listarTodos() {
-        return ResponseEntity.ok(profissionalRepository.findAll());
+        List<Profissional> profissionais = profissionalRepository.findAll();
+        
+        // Ocultar dados sensíveis se o usuário não permitir divulgação
+        profissionais.forEach(p -> {
+            if (Boolean.FALSE.equals(p.getDivulgarDados())) {
+                p.setTelefoneWhatsapp(null);
+                p.setEmail(null);
+            }
+        });
+        
+        return ResponseEntity.ok(profissionais);
     }
 
     @GetMapping("/{id}")
@@ -105,6 +126,9 @@ public class ProfissionalController {
         if (profissional.getAtivo() == null) {
             profissional.setAtivo(true);
         }
+        if (profissional.getDivulgarDados() == null) {
+            profissional.setDivulgarDados(true);
+        }
         if (profissional.getPerfil() == null || profissional.getPerfil().isBlank()) {
             profissional.setPerfil("USUARIO");
         }
@@ -112,6 +136,23 @@ public class ProfissionalController {
             String hash = BCrypt.hashpw(profissional.getSenha(), BCrypt.gensalt(12));
             profissional.setSenha(hash);
         }
+
+        // Definir instituição do profissional criado
+        String usuarioIdCriador = (String) request.getAttribute("usuarioId");
+        if (usuarioIdCriador != null) {
+            try {
+                Long idCriador = Long.parseLong(usuarioIdCriador);
+                profissionalRepository.findById(idCriador).ifPresent(criador -> {
+                    profissional.setInstituicao(criador.getInstituicao());
+                });
+            } catch (NumberFormatException e) {
+                // Log warning or ignore if invalid ID format
+                logger.warn("ID do usuário criador inválido: {}", usuarioIdCriador);
+            }
+        } else {
+            profissional.setInstituicao(null);
+        }
+
         Profissional salvo = profissionalRepository.save(profissional);
         
         // Auditoria
@@ -159,10 +200,32 @@ public class ProfissionalController {
                         if (profissional.getPerfil() != null && !profissional.getPerfil().isBlank()) {
                             existente.setPerfil(profissional.getPerfil());
                         }
+
+                        // Atualizar instituição se for um usuário padrão (não ADMIN)
+                        if (!"ADMIN".equalsIgnoreCase(existente.getPerfil())) {
+                            if (usuarioIdStr != null) {
+                                try {
+                                    Long adminId = Long.parseLong(usuarioIdStr);
+                                    profissionalRepository.findById(adminId).ifPresent(admin -> {
+                                        if (admin.getInstituicao() != null) {
+                                            existente.setInstituicao(admin.getInstituicao());
+                                        }
+                                    });
+                                } catch (NumberFormatException e) {
+                                    logger.warn("ID do administrador inválido ao atualizar instituição: {}", usuarioIdStr);
+                                }
+                            }
+                        }
                     }
                     
                     if (profissional.getEmail() != null) existente.setEmail(profissional.getEmail());
                     if (profissional.getTelefoneWhatsapp() != null) existente.setTelefoneWhatsapp(profissional.getTelefoneWhatsapp());
+                    if (profissional.getDataNascimento() != null) existente.setDataNascimento(profissional.getDataNascimento());
+                    
+                    // Usuário pode alterar sua preferência de divulgação de dados
+                    if (profissional.getDivulgarDados() != null) {
+                        existente.setDivulgarDados(profissional.getDivulgarDados());
+                    }
                     
                     if (profissional.getFotoPerfil() != null) {
                         existente.setFotoPerfil(profissional.getFotoPerfil());

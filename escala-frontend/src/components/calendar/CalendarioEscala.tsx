@@ -60,6 +60,10 @@ export const CalendarioEscala: React.FC<CalendarioEscalaProps> = ({
         const profissional = profissionais.find(p => p.id === turno.idProfissional)
         const nomeProfissional = profissional ? profissional.nome : 'Vago'
         
+        // Verificar preferência de privacidade
+        const divulgarDados = profissional?.divulgarDados !== false // Default é true
+        const contato = divulgarDados ? profissional?.telefoneWhatsapp : null
+        
         // Construir datas
         const [horaIni, minIni] = turno.horaInicio.split(':').map(Number)
         const [horaFim, minFim] = turno.horaFim.split(':').map(Number)
@@ -78,7 +82,7 @@ export const CalendarioEscala: React.FC<CalendarioEscalaProps> = ({
 
         return {
           id: turno.id,
-          title: `${nomeProfissional} - ${turno.local}`,
+          title: `${nomeProfissional}${contato ? ` (${contato})` : ''} - ${turno.local}`,
           start,
           end,
           resource: turno,

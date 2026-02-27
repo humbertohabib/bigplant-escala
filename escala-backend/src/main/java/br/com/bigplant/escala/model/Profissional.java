@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 @Entity
@@ -37,6 +39,14 @@ public class Profissional {
     private String perfil;
 
     private String fotoPerfil;
+
+    @ManyToOne
+    @JoinColumn(name = "id_instituicao")
+    private InstituicaoOrganizacional instituicao;
+
+    private Boolean divulgarDados;
+
+    private java.time.LocalDate dataNascimento;
 
     public Long getId() {
         return id;
@@ -132,5 +142,29 @@ public class Profissional {
 
     public void setFotoPerfil(String fotoPerfil) {
         this.fotoPerfil = fotoPerfil;
+    }
+
+    public InstituicaoOrganizacional getInstituicao() {
+        return instituicao;
+    }
+
+    public void setInstituicao(InstituicaoOrganizacional instituicao) {
+        this.instituicao = instituicao;
+    }
+
+    public Boolean getDivulgarDados() {
+        return divulgarDados;
+    }
+
+    public void setDivulgarDados(Boolean divulgarDados) {
+        this.divulgarDados = divulgarDados;
+    }
+
+    public java.time.LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(java.time.LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
     }
 }

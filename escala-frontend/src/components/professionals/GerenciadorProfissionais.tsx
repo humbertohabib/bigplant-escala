@@ -50,7 +50,9 @@ export function GerenciadorProfissionais({
     telefoneWhatsapp: '',
     perfil: 'MEDICO',
     senha: '',
-    fotoPerfil: ''
+    fotoPerfil: '',
+    divulgarDados: true,
+    dataNascimento: ''
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -148,7 +150,9 @@ export function GerenciadorProfissionais({
       telefoneWhatsapp: '',
       perfil: 'MEDICO',
       senha: '',
-      fotoPerfil: ''
+      fotoPerfil: '',
+      divulgarDados: true,
+      dataNascimento: ''
     })
     setModalAberto(true)
     setErro(null)
@@ -316,13 +320,32 @@ export function GerenciadorProfissionais({
               <div className="space-y-2 mt-4">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Mail size={14} className="text-gray-400" />
-                  <span className="truncate">{p.email || 'Sem email'}</span>
+                  <span className="truncate">
+                    {p.divulgarDados === false ? (
+                      <span className="text-gray-400 italic">Não divulgado</span>
+                    ) : (
+                      p.email || 'Sem email'
+                    )}
+                  </span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Phone size={14} className="text-gray-400" />
-                  <span>{p.telefoneWhatsapp || 'Sem telefone'}</span>
+                  <span>
+                    {p.divulgarDados === false ? (
+                      <span className="text-gray-400 italic">Não divulgado</span>
+                    ) : (
+                      p.telefoneWhatsapp || 'Sem telefone'
+                    )}
+                  </span>
                 </div>
+
+                {p.dataNascimento && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <User size={14} className="text-gray-400" />
+                    <span>{p.dataNascimento.split('-').reverse().join('/')}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPerfilBadgeColor(p.perfil)}`}>
@@ -422,6 +445,26 @@ export function GerenciadorProfissionais({
                       />
                     </div>
 
+                    {novoProfissional.instituicao && (
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Instituição Vinculada</label>
+                        <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 flex items-center gap-2">
+                          <Shield size={16} className="text-gray-400" />
+                          <span>{novoProfissional.instituicao.nome}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+                      <input
+                        type="date"
+                        value={novoProfissional.dataNascimento || ''}
+                        onChange={(e) => setNovoProfissional({ ...novoProfissional, dataNascimento: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">CRM *</label>
                       <input
@@ -487,6 +530,22 @@ export function GerenciadorProfissionais({
                         placeholder="(11) 99999-9999"
                       />
                     </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 text-blue-800 rounded-lg border border-blue-100">
+                    <input
+                      type="checkbox"
+                      id="divulgarDados"
+                      checked={novoProfissional.divulgarDados !== false}
+                      onChange={(e) => setNovoProfissional({ ...novoProfissional, divulgarDados: e.target.checked })}
+                      className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                    />
+                    <label htmlFor="divulgarDados" className="text-sm cursor-pointer select-none">
+                      <span className="font-medium block mb-1">Permitir divulgação de dados</span>
+                      <span className="text-blue-600/80 text-xs">
+                        Ao marcar esta opção, seus dados de contato (email e telefone) ficarão visíveis para outros usuários na escala.
+                      </span>
+                    </label>
                   </div>
                 </div>
 

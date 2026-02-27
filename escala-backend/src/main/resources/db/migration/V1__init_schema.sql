@@ -1,0 +1,4 @@
+-- V1: Schema inicial (Placeholder)
+-- Em um ambiente novo, este arquivo deveria conter o script completo de criação das tabelas
+-- (profissional, turno, local_atendimento, etc.) gerado a partir do banco existente.
+-- Por enquanto, assume-se que o banco já existe ou é criado via ddl-auto em outro momento.

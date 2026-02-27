@@ -35,6 +35,9 @@ export type Profissional = {
   perfil?: string
   senha?: string
   fotoPerfil?: string
+  divulgarDados?: boolean | null
+  dataNascimento?: string | null
+  instituicao?: InstituicaoOrganizacional | null
 }
 
 export type Disponibilidade = {

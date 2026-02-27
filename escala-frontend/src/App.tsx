@@ -7,6 +7,7 @@ import { GerenciadorTrocas } from './components/exchange/GerenciadorTrocas'
 import { GerenciadorProfissionais } from './components/professionals/GerenciadorProfissionais'
 import { GerenciadorLocais } from './components/locations/GerenciadorLocais'
 import { GerenciadorInstituicoes } from './components/institutions/GerenciadorInstituicoes'
+import { GerenciadorRegras } from './components/rules/GerenciadorRegras'
 import { RelatoriosIndicadores } from './components/reports/RelatoriosIndicadores'
 import { AuditoriaLogs } from './components/audit/AuditoriaLogs'
 import type {
@@ -31,8 +32,6 @@ function App() {
   const [carregando, setCarregando] = useState(false)
   const [escala, setEscala] = useState<Escala | null>(null)
   const [erro, setErro] = useState<string | null>(null)
-  const [regras, setRegras] = useState<RegrasConcretas | null>(null)
-  const [salvandoRegras, setSalvandoRegras] = useState(false)
   const [aba, setAba] = useState<Aba>('escala')
   const [profissionais, setProfissionais] = useState<Profissional[]>([])
 
@@ -191,39 +190,7 @@ function App() {
     }
   }
 
-  const carregarRegras = async () => {
-    try {
-      const resposta = await authFetch(`${API_BASE_URL}/api/regras/concretas/1`)
-      if (!resposta.ok) {
-        throw new Error('Erro ao carregar regras')
-      }
-      const dados: RegrasConcretas = await resposta.json()
-      setRegras(dados)
-    } catch (e) {
-      setErro((e as Error).message)
-    }
-  }
 
-  const salvarRegras = async () => {
-    if (!regras) return
-    try {
-      setSalvandoRegras(true)
-      const resposta = await authFetch(`${API_BASE_URL}/api/regras/concretas/1`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(regras),
-      })
-      if (!resposta.ok) {
-        throw new Error('Erro ao salvar regras')
-      }
-      const dados: RegrasConcretas = await resposta.json()
-      setRegras(dados)
-    } catch (e) {
-      setErro((e as Error).message)
-    } finally {
-      setSalvandoRegras(false)
-    }
-  }
 
   const realizarLogin = async (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault()
@@ -351,6 +318,8 @@ function App() {
       setAba={setAba}
       onLogout={realizarLogout}
       onUpdateUser={setUsuarioLogado}
+      apiBaseUrl={API_BASE_URL}
+      authFetch={authFetch}
     >
 
       {erro && <p style={{ color: 'red' }}>{erro}</p>}
@@ -398,78 +367,10 @@ function App() {
               </button>
             </div>
             
-            {(usuarioLogado?.perfil === 'ADMIN' || usuarioLogado?.perfil === 'COORDENADOR') && (
-               <div className="flex gap-2">
-                 {!regras && (
-                   <button 
-                     onClick={carregarRegras}
-                     className="text-blue-600 hover:text-blue-800 underline"
-                   >
-                     Configurar regras
-                   </button>
-                 )}
-               </div>
-            )}
+
           </div>
 
-          {regras && (
-            <div className="bg-white p-4 rounded shadow mb-4 border border-gray-200">
-              <h3 className="font-semibold mb-3">Regras de Escala</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <label className="flex flex-col text-sm">
-                  Máximo de noites por mês
-                  <input
-                    type="number"
-                    className="border p-1 rounded mt-1"
-                    value={regras.maxNoitesMes ?? ''}
-                    onChange={(e) =>
-                      setRegras({
-                        ...regras,
-                        maxNoitesMes: e.target.value === '' ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label className="flex flex-col text-sm">
-                  Descanso mínimo (horas)
-                  <input
-                    type="number"
-                    className="border p-1 rounded mt-1"
-                    value={regras.minDescansoHoras ?? ''}
-                    onChange={(e) =>
-                      setRegras({
-                        ...regras,
-                        minDescansoHoras: e.target.value === '' ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label className="flex flex-col text-sm">
-                  Máx. plantões consecutivos
-                  <input
-                    type="number"
-                    className="border p-1 rounded mt-1"
-                    value={regras.maxPlantoesConsecutivos ?? ''}
-                    onChange={(e) =>
-                      setRegras({
-                        ...regras,
-                        maxPlantoesConsecutivos: e.target.value === '' ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <button
-                  onClick={salvarRegras}
-                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
-                  disabled={salvandoRegras}
-                >
-                  {salvandoRegras ? 'Salvando...' : 'Salvar Regras'}
-                </button>
-              </div>
-            </div>
-          )}
+
 
           <div style={{ flex: 1, minHeight: 0 }}>
              <CalendarioEscala
@@ -480,6 +381,15 @@ function App() {
              />
           </div>
         </div>
+      )}
+
+      {aba === 'regras' && (
+        <GerenciadorRegras
+          usuarioLogado={usuarioLogado!}
+          apiBaseUrl={API_BASE_URL}
+          authFetch={authFetch}
+          setErro={setErro}
+        />
       )}
 
       {aba === 'relatorios' && (

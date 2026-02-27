@@ -1,5 +1,6 @@
-import React, { useRef } from 'react'
+import React, { useState } from 'react'
 import type { UsuarioAutenticado, Aba } from '../../types'
+import { MeuPerfilModal } from '../profile/MeuPerfilModal'
 import {
   Calendar,
   Users,
@@ -12,7 +13,8 @@ import {
   LayoutDashboard,
   Building2,
   Camera,
-  Shield
+  Shield,
+  User
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -21,6 +23,8 @@ interface SidebarProps {
   setAba: (aba: Aba) => void
   onLogout: () => void
   onUpdateUser: (usuario: UsuarioAutenticado) => void
+  apiBaseUrl: string
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -28,55 +32,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   abaAtual,
   setAba,
   onLogout,
-  onUpdateUser
+  onUpdateUser,
+  apiBaseUrl,
+  authFetch
 }) => {
+  const [isProfileModalOpen, setProfileModalOpen] = useState(false)
+
   const isAdmin = usuario.perfil === 'ADMIN'
   const isCoord = usuario.perfil === 'COORDENADOR'
   const isRestricted = usuario.perfil === 'USUARIO'
-  // const isMedico = usuario.perfil === 'MEDICO' // Não usado explicitamente, mas implícito
+  const isMedico = usuario.perfil === 'MEDICO'
+  const isSecretario = usuario.perfil === 'SECRETARIO'
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFotoClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validar tamanho (ex: 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 5MB')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onloadend = async () => {
-      const base64String = reader.result as string
-      
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-        const response = await fetch(`${API_URL}/api/profissionais/${usuario.id}/foto`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${usuario.token}`
-          },
-          body: JSON.stringify({ fotoPerfil: base64String })
-        })
-
-        if (response.ok) {
-          onUpdateUser({ ...usuario, fotoPerfil: base64String })
-        } else {
-          alert('Erro ao atualizar foto de perfil')
-        }
-      } catch (error) {
-        console.error('Erro ao enviar foto:', error)
-        alert('Erro ao enviar foto')
-      }
-    }
-    reader.readAsDataURL(file)
+  const handleOpenProfile = () => {
+    setProfileModalOpen(true)
   }
 
   return (
@@ -84,8 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-header">
         <div 
           className="relative group cursor-pointer" 
-          onClick={handleFotoClick}
-          title="Clique para alterar a foto"
+          onClick={handleOpenProfile}
+          title="Clique para editar perfil"
         >
           {usuario.fotoPerfil ? (
             <img 
@@ -99,20 +68,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            <Camera size={16} className="text-white drop-shadow-md" />
+            <Settings size={16} className="text-white drop-shadow-md" />
           </div>
         </div>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          hidden 
-          accept="image/*" 
-          onChange={handleFileChange} 
-        />
         
-        <div className="flex flex-col ml-3 overflow-hidden">
+        <div className="flex flex-col ml-3 overflow-hidden cursor-pointer" onClick={handleOpenProfile}>
           <span className="font-bold leading-tight truncate">BigPlant Escala</span>
-          <span className="text-xs opacity-75 font-normal truncate" title={usuario.nome}>
+          <span className="text-xs opacity-75 font-normal truncate hover:underline" title={usuario.nome}>
             {usuario.nome}
           </span>
         </div>
@@ -216,6 +178,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Sair</span>
         </button>
       </div>
+
+      <MeuPerfilModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        usuario={usuario}
+        onUpdateUser={onUpdateUser}
+        apiBaseUrl={apiBaseUrl}
+        authFetch={authFetch}
+      />
     </aside>
   )
 }

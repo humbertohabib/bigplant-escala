@@ -48,10 +48,14 @@ public class RegrasController {
     public ResponseEntity<RegrasConcretasDto> atualizarRegrasConcretas(
             @PathVariable Long idHospital, @RequestBody RegrasConcretasDto dto) {
         LocalDate hoje = LocalDate.now();
-        salvarOuAtualizarRegra(idHospital, "MAX_NOITES_MES", "Número máximo de plantões noturnos por mês", dto.maxNoitesMes, hoje);
-        salvarOuAtualizarRegra(idHospital, "MIN_DESCANSO_HORAS", "Descanso mínimo entre plantões em horas", dto.minDescansoHoras, hoje);
-        salvarOuAtualizarRegra(
-                idHospital, "MAX_PLANTOES_CONSECUTIVOS", "Máximo de plantões consecutivos", dto.maxPlantoesConsecutivos, hoje);
+        List<RegraEscalaParametro> existentes = regraEscalaParametroRepository
+                .findByIdHospitalAndAtivoAndDataInicioVigenciaLessThanEqualAndDataFimVigenciaIsNullOrDataFimVigenciaGreaterThanEqual(
+                        idHospital, true, hoje, hoje);
+
+        salvarOuAtualizarRegra(existentes, idHospital, "MAX_NOITES_MES", "Número máximo de plantões noturnos por mês", dto.maxNoitesMes, hoje);
+        salvarOuAtualizarRegra(existentes, idHospital, "MIN_DESCANSO_HORAS", "Descanso mínimo entre plantões em horas", dto.minDescansoHoras, hoje);
+        salvarOuAtualizarRegra(existentes, idHospital, "MAX_PLANTOES_CONSECUTIVOS", "Máximo de plantões consecutivos", dto.maxPlantoesConsecutivos, hoje);
+
         return obterRegrasConcretas(idHospital);
     }
 
@@ -65,27 +69,40 @@ public class RegrasController {
     }
 
     private void salvarOuAtualizarRegra(
-            Long idHospital, String chave, String descricao, Integer valorInteiro, LocalDate hoje) {
+            List<RegraEscalaParametro> existentes, Long idHospital, String chave, String descricao, Integer valorInteiro, LocalDate hoje) {
         if (valorInteiro == null || valorInteiro <= 0) {
             return;
         }
-        List<RegraEscalaParametro> existentes = regraEscalaParametroRepository
-                .findByIdHospitalAndAtivoAndDataInicioVigenciaLessThanEqualAndDataFimVigenciaIsNullOrDataFimVigenciaGreaterThanEqual(
-                        idHospital, true, hoje, hoje);
 
         RegraEscalaParametro regra = existentes.stream()
                 .filter(r -> chave.equalsIgnoreCase(r.getChave()))
                 .findFirst()
-                .orElseGet(RegraEscalaParametro::new);
+                .orElse(null);
 
-        regra.setChave(chave);
+        if (regra == null) {
+            regra = new RegraEscalaParametro();
+            regra.setChave(chave);
+            regra.setIdHospital(idHospital);
+            regra.setAtivo(true);
+            regra.setDataInicioVigencia(hoje);
+            // We don't add to 'existentes' because we are saving immediately and returning a fresh fetch at the end of the controller method isn't using 'existentes' anyway (it calls obterRegrasConcretas which fetches again).
+            // Actually, obterRegrasConcretas fetches again. That's fine.
+        }
+
         regra.setDescricao(descricao);
         regra.setValorInteiro(valorInteiro);
-        regra.setUnidade("PLANTOES");
+        
+        if (chave.contains("HORAS")) {
+            regra.setUnidade("HORAS");
+        } else {
+            regra.setUnidade("PLANTOES");
+        }
+        
         regra.setEscopo("HOSPITAL");
-        regra.setIdHospital(idHospital);
-        regra.setDataInicioVigencia(hoje);
-        regra.setAtivo(true);
+        // We ensure these are set for new records; for existing ones they are already set but setting them again is harmless/correct.
+        if (regra.getIdHospital() == null) regra.setIdHospital(idHospital);
+        if (regra.getDataInicioVigencia() == null) regra.setDataInicioVigencia(hoje);
+        if (regra.getAtivo() == null) regra.setAtivo(true);
 
         regraEscalaParametroRepository.save(regra);
     }
