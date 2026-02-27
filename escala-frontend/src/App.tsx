@@ -45,6 +45,10 @@ function App() {
   // Estado para passar o turno selecionado na aba Escala para o Gerenciador de Trocas
   const [turnoTrocaInicial, setTurnoTrocaInicial] = useState<Turno | null>(null)
 
+  const [escalasDisponiveis, setEscalasDisponiveis] = useState<Escala[]>([])
+  const [idEscalaSelecionada, setIdEscalaSelecionada] = useState<number | ''>('')
+  const [carregandoEscala, setCarregandoEscala] = useState(false)
+
   const [usuarioLogado, setUsuarioLogado] = useState<UsuarioAutenticado | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSenha, setLoginSenha] = useState('')
@@ -209,13 +213,18 @@ function App() {
             setEspecialidades(dadosEsp)
           }
 
-          // Carregar escala atual
-          const resEscala = await authFetch(`${API_BASE_URL}/api/escala/1/atual`)
-          if (resEscala.ok) {
-            const dadosEscala: Escala = await resEscala.json()
-            setEscala(dadosEscala)
-          } else if (resEscala.status !== 404) {
-             console.error('Erro ao buscar escala:', resEscala.status)
+          // Carregar lista de escalas
+          const resEscalas = await authFetch(`${API_BASE_URL}/api/escala/1/listar`)
+          if (resEscalas.ok) {
+            const dadosEscalas: Escala[] = await resEscalas.json()
+            setEscalasDisponiveis(dadosEscalas)
+            
+            // Se houver escalas, seleciona a mais recente
+            if (dadosEscalas.length > 0) {
+              const maisRecente = dadosEscalas[0]
+              setEscala(maisRecente)
+              setIdEscalaSelecionada(maisRecente.id)
+            }
           }
 
           // Carregar configurações de regras
@@ -236,6 +245,31 @@ function App() {
       carregarDadosIniciais()
     }
   }, [usuarioLogado, API_BASE_URL, authFetch])
+
+  // Efeito para carregar escala quando selecionada no dropdown
+  useEffect(() => {
+    if (!idEscalaSelecionada || !usuarioLogado) return
+
+    const carregarEscalaSelecionada = async () => {
+      try {
+        setCarregandoEscala(true)
+        const res = await authFetch(`${API_BASE_URL}/api/escala/${idEscalaSelecionada}`)
+        if (res.ok) {
+          const dados: Escala = await res.json()
+          setEscala(dados)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar escala selecionada:', error)
+      } finally {
+        setCarregandoEscala(false)
+      }
+    }
+
+    // Se já temos a escala carregada e o ID bate, não precisa buscar de novo
+    if (escala?.id !== idEscalaSelecionada) {
+      carregarEscalaSelecionada()
+    }
+  }, [idEscalaSelecionada, API_BASE_URL, authFetch])
 
   const excluirTurno = async (id: number) => {
     try {
@@ -269,6 +303,14 @@ function App() {
         throw new Error('Erro ao excluir escala')
       }
       setEscala(null)
+      // Atualiza lista de escalas
+      const novasEscalas = escalasDisponiveis.filter(e => e.id !== escala.id)
+      setEscalasDisponiveis(novasEscalas)
+      if (novasEscalas.length > 0) {
+        setIdEscalaSelecionada(novasEscalas[0].id)
+      } else {
+        setIdEscalaSelecionada('')
+      }
     } catch (e) {
       setErro((e as Error).message)
     } finally {
@@ -299,6 +341,9 @@ function App() {
 
       const dados: Escala = await resposta.json()
       setEscala(dados)
+      // Atualiza lista de escalas e seleciona a nova
+      setEscalasDisponiveis([dados, ...escalasDisponiveis])
+      setIdEscalaSelecionada(dados.id)
     } catch (e) {
       setErro((e as Error).message)
     } finally {
@@ -465,6 +510,43 @@ function App() {
 
       {aba === 'escala' && (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
+          
+          {/* Barra de Seleção de Escala */}
+          <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <label htmlFor="escala-select" className="text-sm font-medium text-gray-700">
+                Escala Visualizada:
+              </label>
+              <select
+                id="escala-select"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 min-w-[300px]"
+                value={idEscalaSelecionada}
+                onChange={(e) => setIdEscalaSelecionada(e.target.value ? Number(e.target.value) : '')}
+                disabled={carregandoEscala}
+              >
+                {escalasDisponiveis.length === 0 && <option value="">Nenhuma escala gerada</option>}
+                {escalasDisponiveis.map(e => (
+                  <option key={e.id} value={e.id}>
+                    Escala #{e.id} - {new Date(e.dataInicio).toLocaleDateString()} até {new Date(e.dataFim).toLocaleDateString()} ({e.status})
+                  </option>
+                ))}
+              </select>
+              {carregandoEscala && <span className="text-sm text-gray-500 ml-2 animate-pulse">Carregando...</span>}
+            </div>
+
+            {escala && (usuarioLogado?.perfil === 'ADMIN' || usuarioLogado?.perfil === 'COORDENADOR') && (
+              <button
+                className="bg-red-50 text-red-700 px-4 py-2 rounded-lg hover:bg-red-100 disabled:opacity-50 font-medium transition-colors flex items-center shadow-sm border border-red-200"
+                onClick={excluirEscala}
+                disabled={carregando}
+                title="Excluir esta escala"
+              >
+                <Trash2 size={18} className="mr-2" />
+                Excluir Escala Atual
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-end justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
             <div className="flex items-start gap-4 flex-wrap">
               <div className="flex flex-col">
@@ -546,19 +628,8 @@ function App() {
                       <span className="animate-spin mr-2">⟳</span>
                       Gerando...
                     </>
-                  ) : 'Gerar Escala'}
+                  ) : 'Gerar Nova Escala'}
                 </button>
-                
-                {escala && (usuarioLogado?.perfil === 'ADMIN' || usuarioLogado?.perfil === 'COORDENADOR') && (
-                  <button
-                    className="bg-red-100 text-red-700 px-3 py-2.5 rounded-lg hover:bg-red-200 disabled:opacity-50 font-medium transition-colors flex items-center shadow-sm h-[42px] ml-2"
-                    onClick={excluirEscala}
-                    disabled={carregando}
-                    title="Excluir Escala Atual"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                )}
               </div>
             </div>
             

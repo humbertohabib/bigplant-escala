@@ -100,6 +100,14 @@ public class GeracaoEscalaService {
         return escalaRepository.findTopByIdHospitalOrderByDataInicioDesc(idHospital);
     }
 
+    public List<Escala> listarEscalas(Long idHospital) {
+        return escalaRepository.findAllByIdHospitalOrderByDataInicioDesc(idHospital);
+    }
+
+    public Optional<Escala> buscarEscalaPorId(Long id) {
+        return escalaRepository.findById(id);
+    }
+
     @Transactional
     public void excluirEscala(Long id) {
         if (escalaRepository.existsById(id)) {

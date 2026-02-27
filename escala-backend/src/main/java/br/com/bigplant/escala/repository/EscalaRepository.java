@@ -14,5 +14,7 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
             Long idHospital, LocalDate inicio, LocalDate fim);
 
     Optional<Escala> findTopByIdHospitalOrderByDataInicioDesc(Long idHospital);
+
+    List<Escala> findAllByIdHospitalOrderByDataInicioDesc(Long idHospital);
 }
 

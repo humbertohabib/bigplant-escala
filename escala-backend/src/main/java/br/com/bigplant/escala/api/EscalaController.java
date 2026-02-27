@@ -4,6 +4,7 @@ import br.com.bigplant.escala.dto.DadosGeracaoEscalaDTO;
 import br.com.bigplant.escala.model.Escala;
 import br.com.bigplant.escala.service.GeracaoEscalaService;
 import org.springframework.http.ResponseEntity;
+import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,18 @@ public class EscalaController {
         return geracaoEscalaService.buscarUltimaEscala(idHospital)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Escala> buscarPorId(@PathVariable Long id) {
+        return geracaoEscalaService.buscarEscalaPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{idHospital}/listar")
+    public ResponseEntity<List<Escala>> listarEscalas(@PathVariable Long idHospital) {
+        return ResponseEntity.ok(geracaoEscalaService.listarEscalas(idHospital));
     }
 
     @PostMapping("/gerar/{idHospital}")
