@@ -154,14 +154,11 @@
   margin-bottom: 1.5rem !important;
 }
 
-.rbc-event {
-  background-color: var(--primary-color) !important;
-}
-
-.rbc-event.my-event {
-  background-color: #10b981 !important; /* Green for user's events */
-  border-color: #059669 !important;
-}
+/* 
+  REMOVED: .rbc-event overrides with !important that were preventing
+  dynamic styling in CalendarioEscala.tsx.
+  Styles are now handled by eventStyleGetter in the component.
+*/
 
 .rbc-today {
   background-color: #eff6ff !important;
