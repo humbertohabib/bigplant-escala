@@ -4,11 +4,10 @@ import br.com.bigplant.escala.model.Profissional;
 import br.com.bigplant.escala.model.TrocaPlantao;
 import br.com.bigplant.escala.repository.ProfissionalRepository;
 import br.com.bigplant.escala.service.TrocaPlantaoService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,10 +23,12 @@ public class TrocaPlantaoController {
 
     private final TrocaPlantaoService trocaPlantaoService;
     private final ProfissionalRepository profissionalRepository;
+    private final HttpServletRequest request;
 
-    public TrocaPlantaoController(TrocaPlantaoService trocaPlantaoService, ProfissionalRepository profissionalRepository) {
+    public TrocaPlantaoController(TrocaPlantaoService trocaPlantaoService, ProfissionalRepository profissionalRepository, HttpServletRequest request) {
         this.trocaPlantaoService = trocaPlantaoService;
         this.profissionalRepository = profissionalRepository;
+        this.request = request;
     }
 
     @GetMapping
@@ -36,15 +37,18 @@ public class TrocaPlantaoController {
     }
 
     @PostMapping
-    public ResponseEntity<TrocaPlantao> solicitarTroca(@RequestBody SolicitarTrocaRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
+    public ResponseEntity<TrocaPlantao> solicitarTroca(@RequestBody SolicitarTrocaRequest body) {
+        String email = (String) request.getAttribute("usuarioEmail");
+        if (email == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+        }
+        
         Profissional solicitante = profissionalRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profissional não encontrado"));
 
         TrocaPlantao troca =
                 trocaPlantaoService.solicitarTroca(
-                        request.idTurno, request.idProfissionalDestino, request.motivo, solicitante);
+                        body.idTurno, body.idProfissionalDestino, body.motivo, solicitante);
         return ResponseEntity.ok(troca);
     }
 
