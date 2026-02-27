@@ -22,6 +22,11 @@ export type RegrasConcretas = {
   maxPlantoesConsecutivos: number | null
 }
 
+export type Especialidade = {
+  id: number
+  nome: string
+}
+
 export type Profissional = {
   id?: number
   nome: string
@@ -38,6 +43,7 @@ export type Profissional = {
   divulgarDados?: boolean | null
   dataNascimento?: string | null
   instituicao?: InstituicaoOrganizacional | null
+  especialidade?: Especialidade | null
 }
 
 export type Disponibilidade = {

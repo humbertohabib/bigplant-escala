@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -89,9 +90,13 @@ public class GeracaoEscalaService {
         escala.setTurnos(turnos);
 
         Escala escalaSalva = escalaRepository.save(escala);
-        turnoRepository.saveAll(turnos);
+        // turnoRepository.saveAll(turnos); // CascadeType.ALL already handles this
 
         return escalaSalva;
+    }
+
+    public Optional<Escala> buscarUltimaEscala(Long idHospital) {
+        return escalaRepository.findTopByIdHospitalOrderByDataInicioDesc(idHospital);
     }
 
     private void aplicarRegrasEAlocarProfissionais(

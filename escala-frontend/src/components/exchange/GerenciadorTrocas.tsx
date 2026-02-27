@@ -21,7 +21,7 @@ interface Props {
   usuario: UsuarioAutenticado
   apiBaseUrl: string
   profissionais: Profissional[]
-  turnoInicialId?: number | null
+  turnoInicial?: Turno | null
   onLimparTurnoInicial?: () => void
 }
 
@@ -29,7 +29,7 @@ export function GerenciadorTrocas({
   usuario, 
   apiBaseUrl, 
   profissionais, 
-  turnoInicialId,
+  turnoInicial,
   onLimparTurnoInicial 
 }: Props) {
   const [trocas, setTrocas] = useState<TrocaPlantao[]>([])
@@ -108,11 +108,15 @@ export function GerenciadorTrocas({
   }, [todosTurnos, solicitanteId])
 
   useEffect(() => {
-    if (turnoInicialId) {
-      setNovaTroca(prev => ({ ...prev, idTurno: turnoInicialId }))
+    if (turnoInicial) {
+      // Define o profissional solicitante como o profissional do turno (ou o usuário logado se não houver)
+      if (turnoInicial.idProfissional) {
+        setSolicitanteId(turnoInicial.idProfissional)
+      }
+      setNovaTroca(prev => ({ ...prev, idTurno: turnoInicial.id }))
       setMostrandoFormulario(true)
     }
-  }, [turnoInicialId])
+  }, [turnoInicial])
 
   const handleSolicitarTroca = async (e: React.FormEvent) => {
     e.preventDefault()

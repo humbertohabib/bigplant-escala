@@ -50,7 +50,7 @@ function App() {
   const [locais, setLocais] = useState<LocalAtendimento[]>([])
   const [turnoEditandoId, setTurnoEditandoId] = useState<number | null>(null)
   // Estado para passar o turno selecionado na aba Escala para o Gerenciador de Trocas
-  const [turnoTrocaInicialId, setTurnoTrocaInicialId] = useState<number | null>(null)
+  const [turnoTrocaInicial, setTurnoTrocaInicial] = useState<Turno | null>(null)
 
   const [usuarioLogado, setUsuarioLogado] = useState<UsuarioAutenticado | null>(null)
   const [loginEmail, setLoginEmail] = useState('')
@@ -186,6 +186,16 @@ function App() {
             const dadosLocais = await resLocais.json()
             setLocais(dadosLocais)
           }
+
+          // Carregar escala atual
+          const resEscala = await authFetch(`${API_BASE_URL}/api/escala/1/atual`)
+          if (resEscala.ok) {
+            const dadosEscala: Escala = await resEscala.json()
+            setEscala(dadosEscala)
+          } else if (resEscala.status !== 404) {
+             console.error('Erro ao buscar escala:', resEscala.status)
+          }
+
         } catch (error) {
           console.error('Erro ao carregar dados iniciais:', error)
         }
@@ -333,7 +343,7 @@ function App() {
   }
 
   const handleSolicitarTroca = (turno: Turno) => {
-    setTurnoTrocaInicialId(turno.id)
+    setTurnoTrocaInicial(turno)
     setAba('trocas')
   }
 
@@ -677,14 +687,14 @@ function App() {
       )}
 
       {aba === 'trocas' && (
-        <GerenciadorTrocas
-          usuario={usuarioLogado!}
-          apiBaseUrl={API_BASE_URL}
-          profissionais={profissionais}
-          turnoInicialId={turnoTrocaInicialId}
-          onLimparTurnoInicial={() => setTurnoTrocaInicialId(null)}
-        />
-      )}
+          <GerenciadorTrocas
+            usuario={usuarioLogado!}
+            apiBaseUrl={API_BASE_URL}
+            profissionais={profissionais}
+            turnoInicial={turnoTrocaInicial}
+            onLimparTurnoInicial={() => setTurnoTrocaInicial(null)}
+          />
+        )}
 
       {aba === 'locais' && (
         <GerenciadorLocais

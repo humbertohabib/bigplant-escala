@@ -44,6 +44,10 @@ public class Profissional {
     @JoinColumn(name = "id_instituicao")
     private InstituicaoOrganizacional instituicao;
 
+    @ManyToOne
+    @JoinColumn(name = "id_especialidade")
+    private Especialidade especialidade;
+
     private Boolean divulgarDados;
 
     private java.time.LocalDate dataNascimento;
@@ -150,6 +154,14 @@ public class Profissional {
 
     public void setInstituicao(InstituicaoOrganizacional instituicao) {
         this.instituicao = instituicao;
+    }
+
+    public Especialidade getEspecialidade() {
+        return especialidade;
+    }
+
+    public void setEspecialidade(Especialidade especialidade) {
+        this.especialidade = especialidade;
     }
 
     public Boolean getDivulgarDados() {

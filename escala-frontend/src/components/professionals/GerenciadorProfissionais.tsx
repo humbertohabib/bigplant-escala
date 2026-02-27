@@ -13,7 +13,7 @@ import {
   Loader2,
   Camera
 } from 'lucide-react'
-import type { Profissional, UsuarioAutenticado } from '../../types'
+import type { Profissional, UsuarioAutenticado, Especialidade } from '../../types'
 
 interface Props {
   profissionais: Profissional[]
@@ -36,6 +36,7 @@ export function GerenciadorProfissionais({
   const [modalAberto, setModalAberto] = useState(false)
   const [carregando, setCarregando] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [especialidades, setEspecialidades] = useState<Especialidade[]>([])
   
   const [profissionalEditando, setProfissionalEditando] = useState<Profissional | null>(null)
   
@@ -52,7 +53,8 @@ export function GerenciadorProfissionais({
     senha: '',
     fotoPerfil: '',
     divulgarDados: true,
-    dataNascimento: ''
+    dataNascimento: '',
+    especialidade: null
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,6 +94,13 @@ export function GerenciadorProfissionais({
         if (!resposta.ok) throw new Error('Erro ao carregar profissionais')
         const dados = await resposta.json()
         setProfissionais(dados)
+        
+        // Carregar especialidades
+        const respEsp = await authFetch(`${apiBaseUrl}/api/especialidades`)
+        if (respEsp.ok) {
+          const dadosEsp = await respEsp.json()
+          setEspecialidades(dadosEsp)
+        }
       } catch (e) {
         setErro((e as Error).message)
       } finally {
@@ -152,7 +161,8 @@ export function GerenciadorProfissionais({
       senha: '',
       fotoPerfil: '',
       divulgarDados: true,
-      dataNascimento: ''
+      dataNascimento: '',
+      especialidade: null
     })
     setModalAberto(true)
     setErro(null)
@@ -292,6 +302,7 @@ export function GerenciadorProfissionais({
                   <div>
                     <h3 className="font-semibold text-gray-900 line-clamp-1">{p.nome}</h3>
                     <p className="text-xs text-gray-500 font-mono">CRM: {p.crm}</p>
+                    {p.especialidade && <p className="text-xs text-blue-600 font-medium">{p.especialidade.nome}</p>}
                   </div>
                 </div>
                 
@@ -475,6 +486,24 @@ export function GerenciadorProfissionais({
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         placeholder="Ex: 12345-SP"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade</label>
+                      <select
+                        value={novoProfissional.especialidade?.id || ''}
+                        onChange={(e) => {
+                            const id = Number(e.target.value);
+                            const selected = especialidades.find(esp => esp.id === id);
+                            setNovoProfissional({ ...novoProfissional, especialidade: selected || null })
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      >
+                        <option value="">Selecione...</option>
+                        {especialidades.map(esp => (
+                            <option key={esp.id} value={esp.id}>{esp.nome}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>

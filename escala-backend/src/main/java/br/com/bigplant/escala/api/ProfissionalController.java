@@ -191,6 +191,8 @@ public class ProfissionalController {
                     existente.setNome(profissional.getNome());
                     existente.setCrm(profissional.getCrm());
                     
+                    if (profissional.getEspecialidade() != null) existente.setEspecialidade(profissional.getEspecialidade());
+
                     // Somente ADMIN pode alterar ID Hospital, Carga Horária, Ativo e Perfil
                     if (isAdmin) {
                         if (profissional.getIdHospital() != null) existente.setIdHospital(profissional.getIdHospital());
