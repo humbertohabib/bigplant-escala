@@ -479,7 +479,9 @@ function App() {
                   onChange={(e) => setProfissionaisSelecionados(Array.from(e.target.selectedOptions, o => o.value))}
                   disabled={carregando}
                 >
-                  {profissionais.map(p => (
+                  {profissionais
+                    .filter(p => p.ativo && p.perfil === 'MEDICO')
+                    .map(p => (
                     <option key={p.id} value={p.id}>
                       {p.nome}
                     </option>
