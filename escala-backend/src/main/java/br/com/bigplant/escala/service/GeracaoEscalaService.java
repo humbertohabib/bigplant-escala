@@ -1,5 +1,6 @@
 package br.com.bigplant.escala.service;
 
+import br.com.bigplant.escala.dto.DadosGeracaoEscalaDTO;
 import br.com.bigplant.escala.model.Escala;
 import br.com.bigplant.escala.model.Turno;
 import br.com.bigplant.escala.model.Profissional;
@@ -48,7 +49,7 @@ public class GeracaoEscalaService {
     }
 
     @Transactional
-    public Escala gerarEscalaProximosQuinzeDias(Long idHospital, Long idRegraConfiguracao) {
+    public Escala gerarEscalaProximosQuinzeDias(Long idHospital, DadosGeracaoEscalaDTO dados) {
         LocalDate hoje = LocalDate.now();
         LocalDate dataFim = hoje.plusDays(15);
 
@@ -85,7 +86,7 @@ public class GeracaoEscalaService {
             data = data.plusDays(1);
         }
 
-        aplicarRegrasEAlocarProfissionais(idHospital, hoje, dataFim, turnos, idRegraConfiguracao);
+        aplicarRegrasEAlocarProfissionais(idHospital, hoje, dataFim, turnos, dados);
 
         escala.setTurnos(turnos);
 
@@ -100,12 +101,33 @@ public class GeracaoEscalaService {
     }
 
     private void aplicarRegrasEAlocarProfissionais(
-            Long idHospital, LocalDate inicio, LocalDate fim, List<Turno> turnos, Long idRegraConfiguracao) {
+            Long idHospital, LocalDate inicio, LocalDate fim, List<Turno> turnos, DadosGeracaoEscalaDTO dados) {
         List<Profissional> profissionais = profissionalRepository.findByIdHospitalAndAtivoTrue(idHospital);
+        
+        // Filtrar por profissionais se fornecido
+        if (dados.getIdsProfissionais() != null && !dados.getIdsProfissionais().isEmpty()) {
+            profissionais = profissionais.stream()
+                .filter(p -> dados.getIdsProfissionais().contains(p.getId()))
+                .collect(Collectors.toList());
+        }
+
+        // Filtrar por especialidades se fornecido
+        if (dados.getIdsEspecialidades() != null && !dados.getIdsEspecialidades().isEmpty()) {
+            profissionais = profissionais.stream()
+                .filter(p -> p.getEspecialidade() != null && dados.getIdsEspecialidades().contains(p.getEspecialidade().getId()))
+                .collect(Collectors.toList());
+        }
+
         if (profissionais.isEmpty()) {
             return;
         }
 
+        // Pre-buscar turnos existentes para validação de conflito
+        List<Turno> turnosExistentes = turnoRepository.findByIdHospitalAndDataBetween(idHospital, inicio.minusDays(1), fim.plusDays(1));
+        Map<Long, List<Turno>> turnosExistentesMap = turnosExistentes.stream()
+                .collect(Collectors.groupingBy(Turno::getIdProfissional));
+
+        Long idRegraConfiguracao = dados.getIdRegraConfiguracao();
         List<RegraEscalaParametro> regras;
         if (idRegraConfiguracao != null) {
             regras = regraEscalaParametroRepository.findByRegraConfiguracaoId(idRegraConfiguracao);
@@ -148,7 +170,17 @@ public class GeracaoEscalaService {
             LocalDateTime inicioTurno = LocalDateTime.of(turno.getData(), turno.getHoraInicio());
             LocalDateTime fimTurno = calcularFimTurno(turno);
 
-            List<Profissional> candidatosFiltrados = candidatos.stream()
+            // Filtro Hard: Sem Conflito
+            List<Profissional> semConflito = candidatos.stream()
+                    .filter(p -> !temConflitoHorario(p.getId(), turno, turnosExistentesMap))
+                    .collect(Collectors.toList());
+            
+            if (semConflito.isEmpty()) {
+                continue;
+            }
+
+            // Filtros Soft: Regras
+            List<Profissional> candidatosFiltrados = semConflito.stream()
                     .filter(p -> respeitaDescanso(p.getId(), inicioTurno, ultimaSaidaPorProfissional, minDescansoHoras))
                     .filter(p -> respeitaMaxNoites(turno, p.getId(), noitesPorProfissional, maxNoitesMes))
                     .filter(p -> respeitaMaxPlantoesConsecutivos(
@@ -160,7 +192,7 @@ public class GeracaoEscalaService {
                     .collect(Collectors.toList());
 
             if (candidatosFiltrados.isEmpty()) {
-                candidatosFiltrados = candidatos;
+                candidatosFiltrados = semConflito;
             }
 
             Profissional escolhido = candidatosFiltrados.stream()
@@ -190,6 +222,26 @@ public class GeracaoEscalaService {
                 noitesPorProfissional.put(escolhido.getId(), atual + 1);
             }
         }
+    }
+
+    private boolean temConflitoHorario(Long idProfissional, Turno novoTurno, Map<Long, List<Turno>> turnosExistentesMap) {
+        List<Turno> existentes = turnosExistentesMap.get(idProfissional);
+        if (existentes == null || existentes.isEmpty()) {
+            return false;
+        }
+
+        LocalDateTime novoInicio = LocalDateTime.of(novoTurno.getData(), novoTurno.getHoraInicio());
+        LocalDateTime novoFim = calcularFimTurno(novoTurno);
+
+        for (Turno existente : existentes) {
+            LocalDateTime existenteInicio = LocalDateTime.of(existente.getData(), existente.getHoraInicio());
+            LocalDateTime existenteFim = calcularFimTurno(existente);
+
+            if (novoInicio.isBefore(existenteFim) && novoFim.isAfter(existenteInicio)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int obterValorInteiroRegras(List<RegraEscalaParametro> regras, String chave, int valorPadrao) {

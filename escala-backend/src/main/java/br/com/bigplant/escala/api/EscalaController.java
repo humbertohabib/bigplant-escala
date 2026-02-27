@@ -1,11 +1,13 @@
 package br.com.bigplant.escala.api;
 
+import br.com.bigplant.escala.dto.DadosGeracaoEscalaDTO;
 import br.com.bigplant.escala.model.Escala;
 import br.com.bigplant.escala.service.GeracaoEscalaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,8 +31,8 @@ public class EscalaController {
     @PostMapping("/gerar/{idHospital}")
     public ResponseEntity<Escala> gerarEscalaProximosQuinzeDias(
             @PathVariable Long idHospital,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) Long idRegraConfiguracao) {
-        Escala escala = geracaoEscalaService.gerarEscalaProximosQuinzeDias(idHospital, idRegraConfiguracao);
+            @RequestBody DadosGeracaoEscalaDTO dados) {
+        Escala escala = geracaoEscalaService.gerarEscalaProximosQuinzeDias(idHospital, dados);
         return ResponseEntity.ok(escala);
     }
 }

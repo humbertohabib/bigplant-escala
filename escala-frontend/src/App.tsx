@@ -36,7 +36,9 @@ function App() {
   const [profissionais, setProfissionais] = useState<Profissional[]>([])
   const [configuracoesRegras, setConfiguracoesRegras] = useState<RegraConfiguracao[]>([])
   const [idRegraSelecionada, setIdRegraSelecionada] = useState<number | ''>('')
-
+  const [especialidades, setEspecialidades] = useState<Especialidade[]>([])
+  const [especialidadesSelecionadas, setEspecialidadesSelecionadas] = useState<string[]>([])
+  const [profissionaisSelecionados, setProfissionaisSelecionados] = useState<string[]>([])
 
   const [locais, setLocais] = useState<LocalAtendimento[]>([])
   // Estado para passar o turno selecionado na aba Escala para o Gerenciador de Trocas
@@ -199,6 +201,13 @@ function App() {
             setLocais(dadosLocais)
           }
 
+          // Carregar especialidades
+          const resEsp = await authFetch(`${API_BASE_URL}/api/especialidades`)
+          if (resEsp.ok) {
+            const dadosEsp: Especialidade[] = await resEsp.json()
+            setEspecialidades(dadosEsp)
+          }
+
           // Carregar escala atual
           const resEscala = await authFetch(`${API_BASE_URL}/api/escala/1/atual`)
           if (resEscala.ok) {
@@ -232,9 +241,16 @@ function App() {
       setCarregando(true)
       setErro(null)
 
-      const queryParam = idRegraSelecionada ? `?idRegraConfiguracao=${idRegraSelecionada}` : ''
-      const resposta = await authFetch(`${API_BASE_URL}/api/escala/gerar/1${queryParam}`, {
+      const body = {
+        idRegraConfiguracao: idRegraSelecionada || null,
+        idsEspecialidades: especialidadesSelecionadas.length > 0 ? especialidadesSelecionadas.map(Number) : [],
+        idsProfissionais: profissionaisSelecionados.length > 0 ? profissionaisSelecionados.map(Number) : []
+      }
+
+      const resposta = await authFetch(`${API_BASE_URL}/api/escala/gerar/1`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       })
 
       if (!resposta.ok) {
@@ -410,7 +426,7 @@ function App() {
       {aba === 'escala' && (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
           <div className="flex flex-wrap items-end justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
+            <div className="flex items-start gap-4 flex-wrap">
               <div className="flex flex-col">
                 <label htmlFor="regra-select" className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
                   Configuração de Regras
@@ -430,10 +446,50 @@ function App() {
                   ))}
                 </select>
               </div>
+
+              <div className="flex flex-col">
+                <label htmlFor="especialidade-select" className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+                  Especialidades (Ctrl+Click)
+                </label>
+                <select
+                  id="especialidade-select"
+                  multiple
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 min-w-[200px] h-[82px]"
+                  value={especialidadesSelecionadas}
+                  onChange={(e) => setEspecialidadesSelecionadas(Array.from(e.target.selectedOptions, o => o.value))}
+                  disabled={carregando}
+                >
+                  {especialidades.map(esp => (
+                    <option key={esp.id} value={esp.id}>
+                      {esp.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label htmlFor="profissional-select" className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+                  Profissionais (Ctrl+Click)
+                </label>
+                <select
+                  id="profissional-select"
+                  multiple
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 min-w-[200px] h-[82px]"
+                  value={profissionaisSelecionados}
+                  onChange={(e) => setProfissionaisSelecionados(Array.from(e.target.selectedOptions, o => o.value))}
+                  disabled={carregando}
+                >
+                  {profissionais.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
               
-              <div className="flex flex-col justify-end h-full">
+              <div className="flex flex-col justify-end mt-auto pb-1">
                 <button
-                  className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors flex items-center shadow-sm"
+                  className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors flex items-center shadow-sm h-[42px]"
                   onClick={gerarEscala}
                   disabled={
                     carregando ||
@@ -448,7 +504,7 @@ function App() {
                       <span className="animate-spin mr-2">⟳</span>
                       Gerando...
                     </>
-                  ) : 'Gerar Escala (15 dias)'}
+                  ) : 'Gerar Escala'}
                 </button>
               </div>
             </div>
