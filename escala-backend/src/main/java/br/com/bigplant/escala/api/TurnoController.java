@@ -2,6 +2,9 @@ package br.com.bigplant.escala.api;
 
 import br.com.bigplant.escala.model.Turno;
 import br.com.bigplant.escala.repository.TurnoRepository;
+import br.com.bigplant.escala.audit.AuditLog;
+import br.com.bigplant.escala.service.AuditService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,9 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class TurnoController {
 
     private final TurnoRepository turnoRepository;
+    private final AuditService auditService;
+    private final HttpServletRequest request;
 
-    public TurnoController(TurnoRepository turnoRepository) {
+    public TurnoController(TurnoRepository turnoRepository, AuditService auditService, HttpServletRequest request) {
         this.turnoRepository = turnoRepository;
+        this.auditService = auditService;
+        this.request = request;
     }
 
     @GetMapping
@@ -74,10 +81,23 @@ public class TurnoController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
-        if (!turnoRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        turnoRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return turnoRepository.findById(id)
+            .map(turno -> {
+                turnoRepository.delete(turno);
+                
+                // Auditoria
+                try {
+                    String usuarioId = (String) request.getAttribute("usuarioId");
+                    String usuarioEmail = (String) request.getAttribute("usuarioEmail");
+                    auditService.log(usuarioId, usuarioEmail, AuditLog.ActionType.DELETE, 
+                        "Turno", id.toString(), turno, null, request.getRemoteAddr());
+                } catch (Exception e) {
+                    // Log error but don't fail the request
+                    e.printStackTrace();
+                }
+
+                return ResponseEntity.noContent().<Void>build();
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
