@@ -168,6 +168,32 @@ function App() {
     return fetch(input, { ...init, headers })
   }, [usuarioLogado?.token])
 
+  // Carregar dados iniciais (profissionais, locais) ao logar
+  useEffect(() => {
+    if (usuarioLogado) {
+      const carregarDadosIniciais = async () => {
+        try {
+          // Carregar profissionais
+          const resProf = await authFetch(`${API_BASE_URL}/api/profissionais`)
+          if (resProf.ok) {
+            const dadosProf = await resProf.json()
+            setProfissionais(dadosProf)
+          }
+          
+          // Carregar locais (opcional, mas bom para garantir)
+          const resLocais = await authFetch(`${API_BASE_URL}/api/locais`)
+          if (resLocais.ok) {
+            const dadosLocais = await resLocais.json()
+            setLocais(dadosLocais)
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados iniciais:', error)
+        }
+      }
+      carregarDadosIniciais()
+    }
+  }, [usuarioLogado, API_BASE_URL, authFetch])
+
   const gerarEscala = async () => {
     try {
       setCarregando(true)

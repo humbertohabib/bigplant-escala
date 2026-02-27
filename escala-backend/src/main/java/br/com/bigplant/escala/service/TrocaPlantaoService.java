@@ -37,13 +37,20 @@ public class TrocaPlantaoService {
     }
 
     @Transactional
-    public TrocaPlantao solicitarTroca(Long idTurno, Long idProfissionalDestino, String motivo) {
+    public TrocaPlantao solicitarTroca(Long idTurno, Long idProfissionalDestino, String motivo, Profissional solicitante) {
         Turno turno =
                 turnoRepository
                         .findById(idTurno)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turno não encontrado"));
+
         if (turno.getIdProfissional() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Turno sem profissional de origem");
+        }
+
+        if (!"ADMIN".equals(solicitante.getPerfil()) && 
+            !"COORDENADOR".equals(solicitante.getPerfil()) && 
+            !turno.getIdProfissional().equals(solicitante.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para solicitar troca para este turno");
         }
         Profissional origem =
                 profissionalRepository

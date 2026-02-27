@@ -159,7 +159,7 @@ export function RelatoriosIndicadores({
     setCarregando(true)
     try {
       setErro(null)
-      const urlProfissionais = `${apiBaseUrl}/relatorios/profissionais?idHospital=1&inicio=${dataInicioRelatorio}&fim=${dataFimRelatorio}&tipoTurno=${tipoTurnoRelatorio}`
+      const urlProfissionais = `${apiBaseUrl}/api/relatorios/profissionais?idHospital=1&inicio=${dataInicioRelatorio}&fim=${dataFimRelatorio}&tipoTurno=${tipoTurnoRelatorio}`
       const respostaProfissionais = await authFetch(urlProfissionais)
       if (!respostaProfissionais.ok) {
         throw new Error('Erro ao carregar relatório de profissionais')
@@ -167,7 +167,7 @@ export function RelatoriosIndicadores({
       const dadosProfissionais: ResumoProfissionalPeriodo[] = await respostaProfissionais.json()
       setResumoProfissionaisPeriodo(dadosProfissionais)
 
-      const urlTrocas = `${apiBaseUrl}/relatorios/trocas?idHospital=1&inicio=${dataInicioRelatorio}&fim=${dataFimRelatorio}&tipoTurno=${tipoTurnoRelatorio}`
+      const urlTrocas = `${apiBaseUrl}/api/relatorios/trocas?idHospital=1&inicio=${dataInicioRelatorio}&fim=${dataFimRelatorio}&tipoTurno=${tipoTurnoRelatorio}`
       const respostaTrocas = await authFetch(urlTrocas)
       if (!respostaTrocas.ok) {
         throw new Error('Erro ao carregar indicadores de trocas')
@@ -190,7 +190,7 @@ export function RelatoriosIndicadores({
     setCarregandoComparativo(true)
     try {
       setErro(null)
-      const urlProfissionais = `${apiBaseUrl}/relatorios/profissionais?idHospital=1&inicio=${dataInicioComparativo}&fim=${dataFimComparativo}&tipoTurno=${tipoTurnoRelatorio}`
+      const urlProfissionais = `${apiBaseUrl}/api/relatorios/profissionais?idHospital=1&inicio=${dataInicioComparativo}&fim=${dataFimComparativo}&tipoTurno=${tipoTurnoRelatorio}`
       const respostaProfissionais = await authFetch(urlProfissionais)
       if (!respostaProfissionais.ok) {
         throw new Error('Erro ao carregar relatório comparativo de profissionais')
@@ -198,7 +198,7 @@ export function RelatoriosIndicadores({
       const dadosProfissionais: ResumoProfissionalPeriodo[] = await respostaProfissionais.json()
       setResumoProfissionaisComparativo(dadosProfissionais)
 
-      const urlTrocas = `${apiBaseUrl}/relatorios/trocas?idHospital=1&inicio=${dataInicioComparativo}&fim=${dataFimComparativo}&tipoTurno=${tipoTurnoRelatorio}`
+      const urlTrocas = `${apiBaseUrl}/api/relatorios/trocas?idHospital=1&inicio=${dataInicioComparativo}&fim=${dataFimComparativo}&tipoTurno=${tipoTurnoRelatorio}`
       const respostaTrocas = await authFetch(urlTrocas)
       if (!respostaTrocas.ok) {
         throw new Error('Erro ao carregar indicadores comparativos de trocas')

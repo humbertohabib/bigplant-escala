@@ -33,19 +33,23 @@ export function GerenciadorTrocas({
   onLimparTurnoInicial 
 }: Props) {
   const [trocas, setTrocas] = useState<TrocaPlantao[]>([])
-  const [meusTurnos, setMeusTurnos] = useState<Turno[]>([])
+  const [todosTurnos, setTodosTurnos] = useState<Turno[]>([])
+  const [turnosDisponiveis, setTurnosDisponiveis] = useState<Turno[]>([])
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [filtroStatus, setFiltroStatus] = useState<'TODAS' | 'SOLICITADA' | 'APROVADA' | 'REJEITADA'>('TODAS')
   
   // Form state
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false)
+  const [solicitanteId, setSolicitanteId] = useState<number>(usuario.id)
   const [novaTroca, setNovaTroca] = useState({
     idTurno: 0,
     idProfissionalDestino: 0,
     motivo: ''
   })
   const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false)
+
+  const isAdminOrCoord = usuario.perfil === 'ADMIN' || usuario.perfil === 'COORDENADOR'
 
   // Map for quick access
   const profissionaisMap = new Map(profissionais.map(p => [p.id, p]))
@@ -72,20 +76,12 @@ export function GerenciadorTrocas({
       dadosTrocas.sort((a, b) => new Date(b.dataSolicitacao).getTime() - new Date(a.dataSolicitacao).getTime())
       setTrocas(dadosTrocas)
 
-      // Carregar meus turnos futuros para o formulário
+      // Carregar turnos para o formulário
       const resTurnos = await authFetch('/api/turnos')
       if (!resTurnos.ok) throw new Error('Erro ao carregar turnos')
-      const todosTurnos: Turno[] = await resTurnos.json()
+      const listaTurnos: Turno[] = await resTurnos.json()
       
-      const hoje = new Date()
-      hoje.setHours(0, 0, 0, 0)
-      
-      const turnosFuturos = todosTurnos.filter(t => {
-        const dataTurno = parseISO(t.data)
-        return t.idProfissional === usuario.id && dataTurno >= hoje
-      }).sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-      
-      setMeusTurnos(turnosFuturos)
+      setTodosTurnos(listaTurnos)
 
     } catch (e) {
       setErro((e as Error).message)
@@ -97,6 +93,19 @@ export function GerenciadorTrocas({
   useEffect(() => {
     carregarDados()
   }, [])
+
+  useEffect(() => {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    
+    const filtrados = todosTurnos.filter(t => {
+      const dataTurno = parseISO(t.data)
+      // Filtra por profissional solicitante (usuário logado ou selecionado pelo admin)
+      return t.idProfissional === solicitanteId && dataTurno >= hoje
+    }).sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+    
+    setTurnosDisponiveis(filtrados)
+  }, [todosTurnos, solicitanteId])
 
   useEffect(() => {
     if (turnoInicialId) {
@@ -179,14 +188,8 @@ export function GerenciadorTrocas({
   )
 
   const getTurnoDetalhes = (idTurno: number) => {
-    // Tenta encontrar nos meus turnos primeiro, senão busca na lista completa (se tivéssemos)
-    // Como só carregamos "meus turnos", para turnos de outros precisamos confiar no ID ou carregar todos.
-    // Para simplificar e evitar carregar TODOS os turnos do sistema sempre, vamos mostrar o ID se não encontrar.
-    // Melhoria: carregar detalhes do turno específico se não estiver em "meus turnos".
-    // Por enquanto, vamos buscar em "meus turnos" se for origem, mas como a lista de trocas tem turnos de outros...
-    // O ideal seria o backend retornar detalhes do turno na TrocaPlantao.
-    // Como paliativo, vou varrer "meusTurnos" para ver se acho. Se não, mostro ID.
-    const turno = meusTurnos.find(t => t.id === idTurno)
+    // Tenta encontrar nos turnos disponíveis primeiro, senão busca na lista completa
+    const turno = todosTurnos.find(t => t.id === idTurno)
     if (turno) {
       return `${format(parseISO(turno.data), 'dd/MM/yyyy')} - ${turno.tipo} (${turno.horaInicio}-${turno.horaFim})`
     }
@@ -242,9 +245,34 @@ export function GerenciadorTrocas({
               </div>
 
               <form onSubmit={handleSolicitarTroca} className="space-y-4">
+                {isAdminOrCoord && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Profissional Solicitante
+                    </label>
+                    <select
+                      value={solicitanteId}
+                      onChange={e => {
+                        setSolicitanteId(Number(e.target.value))
+                        setNovaTroca(prev => ({ ...prev, idTurno: 0 })) // Reset turno selecionado ao mudar profissional
+                      }}
+                      className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                    >
+                      {[...profissionais]
+                        .sort((a, b) => a.nome.localeCompare(b.nome))
+                        .map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.nome} ({p.crm})
+                          </option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Seu Turno
+                    Turno para Troca
                   </label>
                   <select
                     required
@@ -253,15 +281,15 @@ export function GerenciadorTrocas({
                     className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   >
                     <option value={0}>Selecione um turno...</option>
-                    {meusTurnos.map(turno => (
+                    {turnosDisponiveis.map(turno => (
                       <option key={turno.id} value={turno.id}>
                         {format(parseISO(turno.data), "dd/MM 'às' HH:mm")} - {turno.local} ({turno.tipo})
                       </option>
                     ))}
                   </select>
-                  {meusTurnos.length === 0 && (
+                  {turnosDisponiveis.length === 0 && (
                     <p className="text-xs text-yellow-600 mt-1">
-                      Você não possui turnos futuros para trocar.
+                      Este profissional não possui turnos futuros para trocar.
                     </p>
                   )}
                 </div>
@@ -278,7 +306,7 @@ export function GerenciadorTrocas({
                   >
                     <option value={0}>Selecione o profissional...</option>
                     {profissionais
-                      .filter(p => p.id !== usuario.id) // Não mostrar a si mesmo
+                      .filter(p => p.id !== solicitanteId) // Não mostrar a si mesmo (ou ao solicitante selecionado)
                       .sort((a, b) => a.nome.localeCompare(b.nome))
                       .map(p => (
                         <option key={p.id} value={p.id}>
@@ -290,9 +318,37 @@ export function GerenciadorTrocas({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Motivo (Opcional)
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Motivo (Opcional)
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNovaTroca(prev => ({ ...prev, motivo: 'Motivo de saúde' }))}
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Motivo de saúde"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNovaTroca(prev => ({ ...prev, motivo: 'Compromisso pessoal' }))}
+                        className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Compromisso pessoal"
+                      >
+                        <User className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNovaTroca(prev => ({ ...prev, motivo: 'Conflito de agenda' }))}
+                        className="p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors"
+                        title="Conflito de agenda"
+                      >
+                        <Clock className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                   <textarea
                     rows={3}
                     value={novaTroca.motivo}
