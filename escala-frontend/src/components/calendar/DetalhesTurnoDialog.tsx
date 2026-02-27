@@ -1,5 +1,5 @@
 import { type FC } from 'react'
-import { X, User, Clock, MapPin, Phone, RefreshCw } from 'lucide-react'
+import { X, User, Clock, MapPin, Phone, RefreshCw, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Turno, Profissional, UsuarioAutenticado } from '../../types'
@@ -12,6 +12,7 @@ interface DetalhesTurnoDialogProps {
   isMyShift: boolean
   usuario: UsuarioAutenticado
   onSolicitarTroca: () => void
+  onExcluirTurno?: (id: number) => void
 }
 
 export const DetalhesTurnoDialog: FC<DetalhesTurnoDialogProps> = ({
@@ -21,7 +22,8 @@ export const DetalhesTurnoDialog: FC<DetalhesTurnoDialogProps> = ({
   profissional,
   isMyShift,
   usuario,
-  onSolicitarTroca
+  onSolicitarTroca,
+  onExcluirTurno
 }) => {
   if (!isOpen) return null
 
@@ -34,6 +36,14 @@ export const DetalhesTurnoDialog: FC<DetalhesTurnoDialogProps> = ({
   const dataTurno = new Date(ano, mes - 1, dia)
   
   const canRequestSwap = isMyShift || usuario.perfil === 'ADMIN' || usuario.perfil === 'COORDENADOR'
+  const canDelete = usuario.perfil === 'ADMIN' || usuario.perfil === 'COORDENADOR'
+
+  const handleExcluir = () => {
+    if (onExcluirTurno && window.confirm('Tem certeza que deseja excluir este plantão?')) {
+      onExcluirTurno(turno.id)
+      onClose()
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -121,6 +131,16 @@ export const DetalhesTurnoDialog: FC<DetalhesTurnoDialogProps> = ({
 
         {/* Footer Actions */}
         <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+          {canDelete && onExcluirTurno && (
+            <button
+              onClick={handleExcluir}
+              className="p-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+              title="Excluir Plantão"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+
           <button 
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-sm"

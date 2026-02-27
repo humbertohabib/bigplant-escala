@@ -100,6 +100,15 @@ public class GeracaoEscalaService {
         return escalaRepository.findTopByIdHospitalOrderByDataInicioDesc(idHospital);
     }
 
+    @Transactional
+    public void excluirEscala(Long id) {
+        if (escalaRepository.existsById(id)) {
+            escalaRepository.deleteById(id);
+        } else {
+            throw new IllegalArgumentException("Escala não encontrada");
+        }
+    }
+
     private void aplicarRegrasEAlocarProfissionais(
             Long idHospital, LocalDate inicio, LocalDate fim, List<Turno> turnos, DadosGeracaoEscalaDTO dados) {
         List<Profissional> profissionais = profissionalRepository.findByIdHospitalAndAtivoTrue(idHospital);

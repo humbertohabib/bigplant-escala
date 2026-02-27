@@ -25,6 +25,7 @@ interface CalendarioEscalaProps {
   usuario: UsuarioAutenticado
   profissionais: Profissional[]
   onSolicitarTroca: (turno: Turno) => void
+  onExcluirTurno: (id: number) => void
 }
 
 interface EventoTurno {
@@ -83,7 +84,8 @@ export const CalendarioEscala: React.FC<CalendarioEscalaProps> = ({
   escala,
   usuario,
   profissionais,
-  onSolicitarTroca
+  onSolicitarTroca,
+  onExcluirTurno
 }) => {
   const [view, setView] = useState<View>(Views.MONTH)
   const [date, setDate] = useState(new Date())
@@ -277,6 +279,7 @@ export const CalendarioEscala: React.FC<CalendarioEscalaProps> = ({
           isMyShift={selectedEvent.isMyShift}
           usuario={usuario}
           onSolicitarTroca={() => onSolicitarTroca(selectedEvent.resource)}
+          onExcluirTurno={onExcluirTurno}
         />
       )}
     </div>

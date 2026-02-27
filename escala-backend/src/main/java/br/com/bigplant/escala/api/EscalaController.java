@@ -4,6 +4,7 @@ import br.com.bigplant.escala.dto.DadosGeracaoEscalaDTO;
 import br.com.bigplant.escala.model.Escala;
 import br.com.bigplant.escala.service.GeracaoEscalaService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +35,16 @@ public class EscalaController {
             @RequestBody DadosGeracaoEscalaDTO dados) {
         Escala escala = geracaoEscalaService.gerarEscalaProximosQuinzeDias(idHospital, dados);
         return ResponseEntity.ok(escala);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluirEscala(@PathVariable Long id) {
+        try {
+            geracaoEscalaService.excluirEscala(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
 

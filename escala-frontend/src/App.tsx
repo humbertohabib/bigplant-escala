@@ -1,4 +1,5 @@
 import './App.css'
+import { Trash2 } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
 import { DashboardLayout } from './components/layout/DashboardLayout'
 import { CalendarioEscala } from './components/calendar/CalendarioEscala'
@@ -235,6 +236,45 @@ function App() {
       carregarDadosIniciais()
     }
   }, [usuarioLogado, API_BASE_URL, authFetch])
+
+  const excluirTurno = async (id: number) => {
+    try {
+      const resposta = await authFetch(`${API_BASE_URL}/api/turnos/${id}`, {
+        method: 'DELETE'
+      })
+      if (!resposta.ok) {
+        throw new Error('Erro ao excluir turno')
+      }
+      if (escala) {
+        setEscala({
+          ...escala,
+          turnos: escala.turnos.filter(t => t.id !== id)
+        })
+      }
+    } catch (e) {
+      setErro((e as Error).message)
+    }
+  }
+
+  const excluirEscala = async () => {
+    if (!escala || !window.confirm('Tem certeza que deseja excluir toda a escala atual? Esta ação não pode ser desfeita.')) {
+      return
+    }
+    try {
+      setCarregando(true)
+      const resposta = await authFetch(`${API_BASE_URL}/api/escala/${escala.id}`, {
+        method: 'DELETE'
+      })
+      if (!resposta.ok) {
+        throw new Error('Erro ao excluir escala')
+      }
+      setEscala(null)
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setCarregando(false)
+    }
+  }
 
   const gerarEscala = async () => {
     try {
@@ -508,6 +548,17 @@ function App() {
                     </>
                   ) : 'Gerar Escala'}
                 </button>
+                
+                {escala && (usuarioLogado?.perfil === 'ADMIN' || usuarioLogado?.perfil === 'COORDENADOR') && (
+                  <button
+                    className="bg-red-100 text-red-700 px-3 py-2.5 rounded-lg hover:bg-red-200 disabled:opacity-50 font-medium transition-colors flex items-center shadow-sm h-[42px] ml-2"
+                    onClick={excluirEscala}
+                    disabled={carregando}
+                    title="Excluir Escala Atual"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
               </div>
             </div>
             
@@ -524,6 +575,7 @@ function App() {
                usuario={usuarioLogado!}
                profissionais={profissionais}
                onSolicitarTroca={handleSolicitarTroca}
+               onExcluirTurno={excluirTurno}
              />
           </div>
         </div>
