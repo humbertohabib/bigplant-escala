@@ -8,6 +8,7 @@ import { GerenciadorProfissionais } from './components/professionals/Gerenciador
 import { GerenciadorLocais } from './components/locations/GerenciadorLocais'
 import { GerenciadorInstituicoes } from './components/institutions/GerenciadorInstituicoes'
 import { RelatoriosIndicadores } from './components/reports/RelatoriosIndicadores'
+import { AuditoriaLogs } from './components/audit/AuditoriaLogs'
 import type {
   Turno,
   Escala,
@@ -349,6 +350,7 @@ function App() {
       abaAtual={aba}
       setAba={setAba}
       onLogout={realizarLogout}
+      onUpdateUser={setUsuarioLogado}
     >
 
       {erro && <p style={{ color: 'red' }}>{erro}</p>}
@@ -487,6 +489,10 @@ function App() {
           apiBaseUrl={API_BASE_URL}
           profissionais={profissionais}
         />
+      )}
+
+      {aba === 'auditoria' && usuarioLogado && (
+        <AuditoriaLogs usuarioLogado={usuarioLogado} />
       )}
 
 

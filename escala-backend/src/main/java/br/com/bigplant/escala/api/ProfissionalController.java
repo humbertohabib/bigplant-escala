@@ -3,6 +3,8 @@ package br.com.bigplant.escala.api;
 import br.com.bigplant.escala.model.Profissional;
 import br.com.bigplant.escala.repository.ProfissionalRepository;
 import br.com.bigplant.escala.security.JwtService;
+import br.com.bigplant.escala.audit.AuditLog;
+import br.com.bigplant.escala.service.AuditService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -12,7 +14,9 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -36,6 +41,7 @@ public class ProfissionalController {
 
     private final ProfissionalRepository profissionalRepository;
     private final JwtService jwtService;
+    private final AuditService auditService;
 
     @Value("${google.clientId:}")
     private String googleClientId;
@@ -47,9 +53,10 @@ public class ProfissionalController {
     private Long googleAutoOnboardingDefaultHospitalId;
 
     public ProfissionalController(
-            ProfissionalRepository profissionalRepository, JwtService jwtService) {
+            ProfissionalRepository profissionalRepository, JwtService jwtService, AuditService auditService) {
         this.profissionalRepository = profissionalRepository;
         this.jwtService = jwtService;
+        this.auditService = auditService;
     }
 
     public static class LoginRequest {
@@ -94,7 +101,7 @@ public class ProfissionalController {
     }
 
     @PostMapping
-    public ResponseEntity<Profissional> criar(@RequestBody Profissional profissional) {
+    public ResponseEntity<Profissional> criar(@RequestBody Profissional profissional, HttpServletRequest request) {
         if (profissional.getAtivo() == null) {
             profissional.setAtivo(true);
         }
@@ -106,33 +113,72 @@ public class ProfissionalController {
             profissional.setSenha(hash);
         }
         Profissional salvo = profissionalRepository.save(profissional);
-        return ResponseEntity.ok(salvo);
+        
+        // Auditoria
+        String usuarioId = (String) request.getAttribute("usuarioId");
+        String usuarioEmail = (String) request.getAttribute("usuarioEmail");
+        auditService.log(usuarioId, usuarioEmail, AuditLog.ActionType.CREATE, "Profissional", salvo.getId().toString(), null, salvo, request.getRemoteAddr());
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Profissional> atualizar(@PathVariable Long id, @RequestBody Profissional profissional) {
-        return profissionalRepository
-                .findById(id)
+    public ResponseEntity<Profissional> atualizar(@PathVariable Long id, @RequestBody Profissional profissional, HttpServletRequest request) {
+        String usuarioPerfil = (String) request.getAttribute("usuarioPerfil");
+        String usuarioIdStr = (String) request.getAttribute("usuarioId");
+        String usuarioEmail = (String) request.getAttribute("usuarioEmail");
+        
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(usuarioPerfil);
+        boolean isProprioUsuario = usuarioIdStr != null && usuarioIdStr.equals(id.toString());
+        
+        if (!isAdmin && !isProprioUsuario) {
+             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return profissionalRepository.findById(id)
                 .map(existente -> {
+                    // Captura estado anterior para auditoria
+                    Profissional antigo = new Profissional();
+                    antigo.setId(existente.getId());
+                    antigo.setNome(existente.getNome());
+                    antigo.setEmail(existente.getEmail());
+                    antigo.setPerfil(existente.getPerfil());
+                    antigo.setAtivo(existente.getAtivo());
+                    antigo.setCrm(existente.getCrm());
+                    antigo.setIdHospital(existente.getIdHospital());
+                    
                     existente.setNome(profissional.getNome());
                     existente.setCrm(profissional.getCrm());
-                    existente.setIdHospital(profissional.getIdHospital());
-                    existente.setCargaHorariaMensalMaxima(profissional.getCargaHorariaMensalMaxima());
-                    existente.setCargaHorariaMensalMinima(profissional.getCargaHorariaMensalMinima());
-                    existente.setAtivo(profissional.getAtivo());
-                    existente.setEmail(profissional.getEmail());
-                    existente.setTelefoneWhatsapp(profissional.getTelefoneWhatsapp());
-                    if (profissional.getPerfil() != null && !profissional.getPerfil().isBlank()) {
-                        existente.setPerfil(profissional.getPerfil());
+                    
+                    // Somente ADMIN pode alterar ID Hospital, Carga Horária, Ativo e Perfil
+                    if (isAdmin) {
+                        if (profissional.getIdHospital() != null) existente.setIdHospital(profissional.getIdHospital());
+                        if (profissional.getCargaHorariaMensalMaxima() != null) existente.setCargaHorariaMensalMaxima(profissional.getCargaHorariaMensalMaxima());
+                        if (profissional.getCargaHorariaMensalMinima() != null) existente.setCargaHorariaMensalMinima(profissional.getCargaHorariaMensalMinima());
+                        if (profissional.getAtivo() != null) existente.setAtivo(profissional.getAtivo());
+                        if (profissional.getPerfil() != null && !profissional.getPerfil().isBlank()) {
+                            existente.setPerfil(profissional.getPerfil());
+                        }
                     }
+                    
+                    if (profissional.getEmail() != null) existente.setEmail(profissional.getEmail());
+                    if (profissional.getTelefoneWhatsapp() != null) existente.setTelefoneWhatsapp(profissional.getTelefoneWhatsapp());
+                    
                     if (profissional.getFotoPerfil() != null) {
                         existente.setFotoPerfil(profissional.getFotoPerfil());
                     }
+                    
                     if (profissional.getSenha() != null && !profissional.getSenha().isBlank()) {
                         String hash = BCrypt.hashpw(profissional.getSenha(), BCrypt.gensalt(12));
                         existente.setSenha(hash);
                     }
+                    
                     Profissional salvo = profissionalRepository.save(existente);
+                    
+                    // Auditoria
+                    auditService.log(usuarioIdStr, usuarioEmail, AuditLog.ActionType.UPDATE, 
+                        "Profissional", salvo.getId().toString(), antigo, salvo, request.getRemoteAddr());
+                        
                     return ResponseEntity.ok(salvo);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -315,5 +361,34 @@ public class ProfissionalController {
         }
         profissionalRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/foto")
+    public ResponseEntity<?> atualizarFotoPerfil(@PathVariable Long id, @RequestBody Map<String, String> payload, HttpServletRequest request) {
+        String usuarioPerfil = (String) request.getAttribute("usuarioPerfil");
+        String usuarioIdStr = (String) request.getAttribute("usuarioId");
+        
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(usuarioPerfil);
+        boolean isProprioUsuario = usuarioIdStr != null && usuarioIdStr.equals(id.toString());
+        
+        if (!isAdmin && !isProprioUsuario) {
+             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Optional<Profissional> profissionalOpt = profissionalRepository.findById(id);
+        if (profissionalOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        String novaFoto = payload.get("fotoPerfil");
+        if (novaFoto == null || novaFoto.isBlank()) {
+             return ResponseEntity.badRequest().body("Foto não fornecida");
+        }
+        
+        Profissional profissional = profissionalOpt.get();
+        profissional.setFotoPerfil(novaFoto);
+        profissionalRepository.save(profissional);
+        
+        return ResponseEntity.ok().build();
     }
 }

@@ -1,4 +1,19 @@
 import React from 'react'
+import { 
+  Calendar, 
+  Users, 
+  Settings, 
+  LogOut, 
+  Menu, 
+  X, 
+  User, 
+  RefreshCw, 
+  Clock, 
+  MapPin, 
+  Building2, 
+  FileText,
+  Shield
+} from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import type { UsuarioAutenticado, Aba } from '../../types'
 import './layout.css'
@@ -9,6 +24,7 @@ interface DashboardLayoutProps {
   abaAtual: Aba
   setAba: (aba: Aba) => void
   onLogout: () => void
+  onUpdateUser: (usuario: UsuarioAutenticado) => void
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -16,7 +32,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   usuario,
   abaAtual,
   setAba,
-  onLogout
+  onLogout,
+  onUpdateUser
 }) => {
   const getHeaderTitle = (aba: Aba) => {
     switch(aba) {
@@ -40,6 +57,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         abaAtual={abaAtual}
         setAba={setAba}
         onLogout={onLogout}
+        onUpdateUser={onUpdateUser}
       />
       <div className="main-content">
         <header className="top-bar">

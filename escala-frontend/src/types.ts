@@ -132,14 +132,17 @@ export type InstituicaoOrganizacional = {
   ativo?: boolean | null
 }
 
-export type Aba =
-  | 'escala'
-  | 'profissionais'
-  | 'regras'
-  | 'disponibilidade'
-  | 'turnos'
-  | 'locais'
-  | 'trocas'
-  | 'relatorios'
-  | 'instituicoes'
-  | 'restricted'
+export type AuditLog = {
+  id: number
+  timestamp: string
+  actorId: string
+  actorEmail: string
+  actionType: 'LOGIN' | 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW'
+  resourceName: string
+  resourceId: string
+  oldValue?: string
+  newValue?: string
+  ipAddress: string
+}
+
+export type Aba = 'escala' | 'regras' | 'profissionais' | 'trocas' | 'disponibilidade' | 'locais' | 'instituicoes' | 'relatorios' | 'auditoria'

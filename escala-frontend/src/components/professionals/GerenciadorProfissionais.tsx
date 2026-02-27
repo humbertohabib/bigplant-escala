@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   Search, 
   Plus, 
@@ -10,7 +10,8 @@ import {
   Shield, 
   Save,
   X,
-  Loader2
+  Loader2,
+  Camera
 } from 'lucide-react'
 import type { Profissional, UsuarioAutenticado } from '../../types'
 
@@ -51,6 +52,29 @@ export function GerenciadorProfissionais({
     senha: '',
     fotoPerfil: ''
   })
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFotoClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 5MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64String = reader.result as string
+      setNovoProfissional(prev => ({ ...prev, fotoPerfil: base64String }))
+    }
+    reader.readAsDataURL(file)
+  }
 
   // Carregar dados ao montar
   useEffect(() => {
@@ -202,7 +226,7 @@ export function GerenciadorProfissionais({
           <p className="text-gray-500 mt-1">Gerencie médicos e usuários do sistema</p>
         </div>
         
-        {usuarioLogado.perfil !== 'SECRETARIO' && (
+        {usuarioLogado.perfil === 'ADMIN' && (
           <button
             onClick={handleNovo}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors shadow-sm"
@@ -267,8 +291,8 @@ export function GerenciadorProfissionais({
                   </div>
                 </div>
                 
-                {usuarioLogado.perfil !== 'SECRETARIO' && (
-                  <div className="flex gap-1">
+                <div className="flex gap-1">
+                  {(usuarioLogado.perfil === 'ADMIN' || usuarioLogado.id === p.id) && (
                     <button
                       onClick={() => handleEditar(p)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -276,6 +300,8 @@ export function GerenciadorProfissionais({
                     >
                       <Edit2 size={18} />
                     </button>
+                  )}
+                  {usuarioLogado.perfil === 'ADMIN' && (
                     <button
                       onClick={() => handleExcluir(p)}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -283,8 +309,8 @@ export function GerenciadorProfissionais({
                     >
                       <Trash2 size={18} />
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 mt-4">
@@ -350,18 +376,40 @@ export function GerenciadorProfissionais({
                     <User size={14} /> Dados Pessoais
                   </h4>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Foto do Perfil (URL)</label>
-                      <input
-                        type="text"
-                        value={novoProfissional.fotoPerfil || ''}
-                        onChange={(e) => setNovoProfissional({ ...novoProfissional, fotoPerfil: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        placeholder="https://exemplo.com/foto.jpg"
+                  {/* Foto de Perfil */}
+                  <div className="flex justify-center mb-6">
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={handleFotoClick}
+                      title="Clique para alterar a foto"
+                    >
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        accept="image/*"
                       />
-                    </div>
+                      
+                      {novoProfissional.fotoPerfil ? (
+                        <img 
+                          src={novoProfissional.fotoPerfil} 
+                          alt="Foto de Perfil" 
+                          className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg group-hover:opacity-75 transition-opacity"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg text-slate-400 group-hover:bg-slate-200 transition-colors">
+                          <User size={40} />
+                        </div>
+                      )}
 
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-full">
+                        <Camera className="text-white drop-shadow-md" size={24} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
                       <input

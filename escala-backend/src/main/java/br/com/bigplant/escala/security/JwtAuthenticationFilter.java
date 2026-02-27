@@ -31,8 +31,10 @@ public class JwtAuthenticationFilter implements Filter {
 
         logger.info("Request recebido no filtro. Method: {}, Path: {}", method, path);
 
+        // Tratamento explícito de OPTIONS para CORS
         if ("OPTIONS".equalsIgnoreCase(method)) {
-            chain.doFilter(request, response);
+            addCorsHeaders(httpResponse);
+            httpResponse.setStatus(HttpServletResponse.SC_OK);
             return;
         }
 
@@ -46,6 +48,7 @@ public class JwtAuthenticationFilter implements Filter {
         String authorization = httpRequest.getHeader("Authorization");
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             logger.warn("Token ausente ou mal formatado. Header: {}", authorization);
+            addCorsHeaders(httpResponse);
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
@@ -55,6 +58,7 @@ public class JwtAuthenticationFilter implements Filter {
             decoded = jwtService.validarToken(token);
         } catch (Exception e) {
             logger.warn("Token inválido: {}", e.getMessage());
+            addCorsHeaders(httpResponse);
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
@@ -67,39 +71,53 @@ public class JwtAuthenticationFilter implements Filter {
         boolean medico = "MEDICO".equals(perfilNormalizado);
         if ("POST".equalsIgnoreCase(method)
                 || "PUT".equalsIgnoreCase(method)
-                || "DELETE".equalsIgnoreCase(method)) {
+                || "DELETE".equalsIgnoreCase(method)
+                || "PATCH".equalsIgnoreCase(method)) {
             if (path.startsWith("/api/profissionais")) {
-                if (!admin && !coordenador) {
+                // POST e DELETE restritos a ADMIN
+                if (("POST".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) && !admin) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
+                // PUT e PATCH permitidos passarem para validação fina no Controller (ADMIN ou Próprio Usuário)
             } else if (path.startsWith("/api/turnos")) {
                 if (!admin && !coordenador && !secretario) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
             } else if (path.startsWith("/api/disponibilidades")) {
                 if (!admin && !coordenador && !secretario && !medico) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
             } else if (path.startsWith("/api/locais")) {
                 if (!admin && !coordenador && !secretario) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
             } else if (path.startsWith("/api/regras")) {
                 if (!admin && !coordenador) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
+            } else if (path.startsWith("/api/auditoria")) {
+                // Apenas ADMIN e AUDIT podem consultar logs gerais
+                // Usuários comuns podem consultar logs deles mesmos (filtrado no Controller)
+                // O filtro aqui permite a requisição passar, o Controller decide
             } else if (path.startsWith("/api/escala")) {
                 if (!admin && !coordenador && !secretario) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
             } else if (path.startsWith("/api/instituicoes")) {
                 if (!admin) {
+                    addCorsHeaders(httpResponse);
                     httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
@@ -110,5 +128,12 @@ public class JwtAuthenticationFilter implements Filter {
         httpRequest.setAttribute("usuarioEmail", decoded.getClaim("email").asString());
         httpRequest.setAttribute("usuarioIdHospital", decoded.getClaim("idHospital").asLong());
         chain.doFilter(request, response);
+    }
+
+    private void addCorsHeaders(HttpServletResponse response) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With");
+        response.setHeader("Access-Control-Max-Age", "3600");
     }
 }
