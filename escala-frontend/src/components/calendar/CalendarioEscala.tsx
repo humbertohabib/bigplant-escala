@@ -36,30 +36,35 @@ interface EventoTurno {
   isMyShift: boolean
   photoUrl?: string | null
   viewMode: View
+  specialty?: string
+  professionalName: string
 }
 
 const CustomEvent = ({ event }: EventProps<EventoTurno>) => {
   const isCompact = event.viewMode === Views.MONTH
+  const hasSpecialty = !isCompact && typeof event.specialty === 'string' && event.specialty.trim().length > 0
 
   return (
     <div className={`flex ${isCompact ? 'items-center gap-2' : 'flex-col gap-1 p-0.5'} h-full overflow-hidden`}>
       <div className="flex items-center gap-2">
-        {event.photoUrl && (
+        {event.photoUrl ? (
           <img 
             src={event.photoUrl} 
             alt="Foto" 
             className="w-6 h-6 rounded-full border border-white flex-shrink-0 object-cover"
           />
-        )}
-        {!event.photoUrl && (
+        ) : (
            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
              <User size={14} className="text-white" />
            </div>
         )}
         <div className="flex flex-col min-w-0">
           <span className="font-semibold text-xs truncate leading-tight">
-            {isCompact ? event.title : (event.resource.profissional?.nome || 'Vago')}
+            {isCompact ? event.title : event.professionalName}
           </span>
+          {hasSpecialty && (
+             <span className="text-[0.65rem] italic truncate opacity-90">{event.specialty}</span>
+          )}
         </div>
       </div>
       
@@ -104,6 +109,7 @@ export const CalendarioEscala: React.FC<CalendarioEscalaProps> = ({
         const divulgarDados = profissional?.divulgarDados !== false // Default é true
         const contato = divulgarDados ? profissional?.telefoneWhatsapp : null
         const photoUrl = divulgarDados ? profissional?.fotoPerfil : null
+        const specialty = profissional?.especialidade?.nome
         
         // Construir datas
         const [horaIni, minIni] = turno.horaInicio.split(':').map(Number)
@@ -146,7 +152,9 @@ export const CalendarioEscala: React.FC<CalendarioEscalaProps> = ({
           isMyShift,
           photoUrl,
           allDay: false,
-          viewMode: view
+          viewMode: view,
+          specialty,
+          professionalName: nomeProfissional
         }
       })
   }, [escala, profissionais, usuario.id, isMedico, filtroProfissionalId, view])

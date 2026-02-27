@@ -162,4 +162,4 @@ export type AuditLog = {
   ipAddress: string
 }
 
-export type Aba = 'escala' | 'regras' | 'profissionais' | 'trocas' | 'disponibilidade' | 'locais' | 'instituicoes' | 'relatorios' | 'auditoria'
+export type Aba = 'escala' | 'regras' | 'profissionais' | 'trocas' | 'disponibilidade' | 'locais' | 'instituicoes' | 'relatorios' | 'auditoria' | 'restricted'

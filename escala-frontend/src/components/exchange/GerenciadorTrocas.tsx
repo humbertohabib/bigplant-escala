@@ -18,19 +18,21 @@ import {
 import type { TrocaPlantao, Turno, Profissional, UsuarioAutenticado } from '../../types'
 
 interface Props {
-  usuario: UsuarioAutenticado
+  usuarioLogado: UsuarioAutenticado
   apiBaseUrl: string
   profissionais: Profissional[]
   turnoInicial?: Turno | null
-  onLimparTurnoInicial?: () => void
+  onTrocaSolicitada?: () => void
+  authFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 }
 
 export function GerenciadorTrocas({ 
-  usuario, 
+  usuarioLogado, 
   apiBaseUrl, 
   profissionais, 
   turnoInicial,
-  onLimparTurnoInicial 
+  onTrocaSolicitada,
+  authFetch
 }: Props) {
   const [trocas, setTrocas] = useState<TrocaPlantao[]>([])
   const [todosTurnos, setTodosTurnos] = useState<Turno[]>([])
@@ -41,7 +43,7 @@ export function GerenciadorTrocas({
   
   // Form state
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false)
-  const [solicitanteId, setSolicitanteId] = useState<number>(usuario.id)
+  const [solicitanteId, setSolicitanteId] = useState<number>(usuarioLogado.id)
   const [novaTroca, setNovaTroca] = useState({
     idTurno: 0,
     idProfissionalDestino: 0,
@@ -49,18 +51,10 @@ export function GerenciadorTrocas({
   })
   const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false)
 
-  const isAdminOrCoord = usuario.perfil === 'ADMIN' || usuario.perfil === 'COORDENADOR'
+  const isAdminOrCoord = usuarioLogado.perfil === 'ADMIN' || usuarioLogado.perfil === 'COORDENADOR'
 
   // Map for quick access
   const profissionaisMap = new Map(profissionais.map(p => [p.id, p]))
-
-  const authFetch = async (endpoint: string, options: RequestInit = {}) => {
-    const headers = new Headers(options.headers || {})
-    if (usuario.token) {
-      headers.set('Authorization', `Bearer ${usuario.token}`)
-    }
-    return fetch(`${apiBaseUrl}${endpoint}`, { ...options, headers })
-  }
 
   const carregarDados = async () => {
     try {
@@ -147,7 +141,7 @@ export function GerenciadorTrocas({
         motivo: ''
       })
       setMostrandoFormulario(false)
-      if (onLimparTurnoInicial) onLimparTurnoInicial()
+      if (onTrocaSolicitada) onTrocaSolicitada()
 
     } catch (e) {
       setErro((e as Error).message)
@@ -240,7 +234,7 @@ export function GerenciadorTrocas({
                 <button 
                   onClick={() => {
                     setMostrandoFormulario(false)
-                    if (onLimparTurnoInicial) onLimparTurnoInicial()
+                    if (onTrocaSolicitada) onTrocaSolicitada()
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -424,8 +418,8 @@ export function GerenciadorTrocas({
                 {trocasFiltradas.map(troca => {
                   const origem = profissionaisMap.get(troca.idProfissionalOrigem)
                   const destino = profissionaisMap.get(troca.idProfissionalDestino)
-                  const ehOrigem = usuario.id === troca.idProfissionalOrigem
-                  const ehDestino = usuario.id === troca.idProfissionalDestino
+                  const ehOrigem = usuarioLogado.id === troca.idProfissionalOrigem
+                  const ehDestino = usuarioLogado.id === troca.idProfissionalDestino
                   
                   return (
                     <div key={troca.id} className="p-5 hover:bg-gray-50 transition-colors group">
@@ -473,7 +467,7 @@ export function GerenciadorTrocas({
 
                         {/* Actions Section */}
                         <div className="flex items-center justify-end gap-2 min-w-[140px]">
-                          {troca.status === 'SOLICITADA' && (ehDestino || usuario.perfil === 'ADMIN' || usuario.perfil === 'COORDENADOR') && (
+                          {troca.status === 'SOLICITADA' && (ehDestino || usuarioLogado.perfil === 'ADMIN' || usuarioLogado.perfil === 'COORDENADOR') && (
                             <div className="flex gap-2">
                               <button
                                 onClick={() => troca.id && handleAcaoTroca(troca.id, 'aprovar')}

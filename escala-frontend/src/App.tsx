@@ -16,7 +16,6 @@ import type {
   RegrasConcretas,
   RegraConfiguracao,
   Profissional,
-  TurnoCrud,
   LocalAtendimento,
   UsuarioAutenticado,
   Aba
@@ -39,19 +38,7 @@ function App() {
   const [idRegraSelecionada, setIdRegraSelecionada] = useState<number | ''>('')
 
 
-  const [turnos, setTurnos] = useState<TurnoCrud[]>([])
-  const [novoTurno, setNovoTurno] = useState<TurnoCrud>({
-    data: '',
-    horaInicio: '',
-    horaFim: '',
-    tipo: 'DIA',
-    local: '',
-    idHospital: 1,
-    idProfissional: null,
-    idLocalAtendimento: null,
-  })
   const [locais, setLocais] = useState<LocalAtendimento[]>([])
-  const [turnoEditandoId, setTurnoEditandoId] = useState<number | null>(null)
   // Estado para passar o turno selecionado na aba Escala para o Gerenciador de Trocas
   const [turnoTrocaInicial, setTurnoTrocaInicial] = useState<Turno | null>(null)
 
@@ -503,241 +490,16 @@ function App() {
         />
       )}
 
-      {aba === 'turnos' && (
-        <section>
-          <h2>Turnos</h2>
-          <button
-            onClick={async () => {
-              try {
-                const resposta = await authFetch('http://localhost:8080/api/turnos')
-                if (!resposta.ok) throw new Error('Erro ao carregar turnos')
-                const dados: TurnoCrud[] = await resposta.json()
-                setTurnos(dados)
-              } catch (e) {
-                setErro((e as Error).message)
-              }
-            }}
-          >
-            Carregar turnos
-          </button>
-          <div style={{ marginTop: '1rem', maxWidth: 400 }}>
-            <h3>{turnoEditandoId ? 'Editar turno' : 'Novo turno'}</h3>
-            <label>
-              Data
-              <input
-                type="date"
-                value={novoTurno.data}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    data: e.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Início
-              <input
-                type="time"
-                value={novoTurno.horaInicio}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    horaInicio: e.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Fim
-              <input
-                type="time"
-                value={novoTurno.horaFim}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    horaFim: e.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Tipo
-              <select
-                value={novoTurno.tipo}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    tipo: e.target.value,
-                  })
-                }
-              >
-                <option value="DIA">DIA</option>
-                <option value="NOITE">NOITE</option>
-              </select>
-            </label>
-            <label>
-              Local (texto)
-              <input
-                value={novoTurno.local}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    local: e.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              ID Profissional (opcional)
-              <input
-                type="number"
-                value={novoTurno.idProfissional ?? ''}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    idProfissional: e.target.value === '' ? null : Number(e.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
-              ID Local atendimento (opcional)
-              <input
-                type="number"
-                value={novoTurno.idLocalAtendimento ?? ''}
-                onChange={(e) =>
-                  setNovoTurno({
-                    ...novoTurno,
-                    idLocalAtendimento: e.target.value === '' ? null : Number(e.target.value),
-                  })
-                }
-              />
-            </label>
-            <button
-              onClick={async () => {
-                try {
-                  const metodo = turnoEditandoId ? 'PUT' : 'POST'
-                  const url = turnoEditandoId
-                    ? `http://localhost:8080/api/turnos/${turnoEditandoId}`
-                    : 'http://localhost:8080/api/turnos'
-                  const resposta = await authFetch(url, {
-                    method: metodo,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(novoTurno),
-                  })
-                  if (!resposta.ok) throw new Error('Erro ao salvar turno')
-                  const salvo: TurnoCrud = await resposta.json()
-                  if (turnoEditandoId) {
-                    setTurnos((atual) =>
-                      atual.map((t) => (t.id === salvo.id ? salvo : t)),
-                    )
-                  } else {
-                    setTurnos((atual) => [...atual, salvo])
-                  }
-                  setNovoTurno({
-                    data: '',
-                    horaInicio: '',
-                    horaFim: '',
-                    tipo: 'DIA',
-                    local: '',
-                    idHospital: 1,
-                    idProfissional: null,
-                    idLocalAtendimento: null,
-                  })
-                  setTurnoEditandoId(null)
-                } catch (e) {
-                  setErro((e as Error).message)
-                }
-              }}
-            >
-              {turnoEditandoId ? 'Atualizar' : 'Salvar'}
-            </button>
-          </div>
-          <table style={{ marginTop: '1rem' }}>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Data</th>
-                <th>Início</th>
-                <th>Fim</th>
-                <th>Tipo</th>
-                <th>Local</th>
-                <th>Profissional</th>
-                <th>Local atendimento</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {turnos.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.id}</td>
-                  <td>{t.data}</td>
-                  <td>{t.horaInicio}</td>
-                  <td>{t.horaFim}</td>
-                  <td>{t.tipo}</td>
-                  <td>{t.local}</td>
-                  <td>{t.idProfissional ?? '-'}</td>
-                  <td>{t.idLocalAtendimento ?? '-'}</td>
-                  <td>
-                    <button
-                      onClick={() => {
-                        setTurnoEditandoId(t.id ?? null)
-                        setNovoTurno({
-                          id: t.id,
-                          data: t.data,
-                          horaInicio: t.horaInicio,
-                          horaFim: t.horaFim,
-                          tipo: t.tipo,
-                          local: t.local,
-                          idHospital: t.idHospital,
-                          idProfissional: t.idProfissional ?? null,
-                          idLocalAtendimento: t.idLocalAtendimento ?? null,
-                        })
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!t.id) return
-                        const confirmar = window.confirm(
-                          `Confirmar exclusão do turno ID ${t.id} (${t.data} ${t.horaInicio}-${t.horaFim}, tipo ${t.tipo}, local ${t.local})?`,
-                        )
-                        if (!confirmar) return
-                        try {
-                          const resposta = await authFetch(
-                            `http://localhost:8080/api/turnos/${t.id}`,
-                            { method: 'DELETE' },
-                          )
-                          if (!resposta.ok && resposta.status !== 204) {
-                            throw new Error('Erro ao remover turno')
-                          }
-                          setTurnos((atual) => atual.filter((x) => x.id !== t.id))
-                        } catch (e) {
-                          setErro((e as Error).message)
-                        }
-                      }}
-                    >
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-
       {aba === 'trocas' && (
-          <GerenciadorTrocas
-            usuario={usuarioLogado!}
-            apiBaseUrl={API_BASE_URL}
-            profissionais={profissionais}
-            turnoInicial={turnoTrocaInicial}
-            onLimparTurnoInicial={() => setTurnoTrocaInicial(null)}
-          />
-        )}
+        <GerenciadorTrocas 
+          usuarioLogado={usuarioLogado!} 
+          turnoInicial={turnoTrocaInicial}
+          onTrocaSolicitada={() => setTurnoTrocaInicial(null)} // Limpa seleção após solicitar
+          apiBaseUrl={API_BASE_URL}
+          authFetch={authFetch}
+          profissionais={profissionais}
+        />
+      )}
 
       {aba === 'locais' && (
         <GerenciadorLocais

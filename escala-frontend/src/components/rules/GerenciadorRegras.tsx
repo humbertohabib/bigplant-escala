@@ -9,6 +9,43 @@ interface Props {
   setErro: (erro: string | null) => void
 }
 
+interface CardRegraProps {
+  titulo: string
+  descricao: string
+  valor: number | null
+  onChange: (valor: number) => void
+  min: number
+  max: number
+  unidade: string
+}
+
+function CardRegra({ titulo, descricao, valor, onChange, min, max, unidade }: CardRegraProps) {
+  return (
+    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <h4 className="font-semibold text-gray-800">{titulo}</h4>
+        <Settings className="w-4 h-4 text-gray-400" />
+      </div>
+      
+      <p className="text-xs text-gray-500 mb-4 min-h-[40px] leading-relaxed">
+        {descricao}
+      </p>
+      
+      <div className="flex items-center gap-3">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={valor ?? ''}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-20 px-3 py-1.5 text-center font-medium border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <span className="text-sm text-gray-600 font-medium">{unidade}</span>
+      </div>
+    </div>
+  )
+}
+
 export function GerenciadorRegras({
   usuarioLogado,
   apiBaseUrl,
