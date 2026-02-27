@@ -14,6 +14,7 @@ import type {
   Turno,
   Escala,
   RegrasConcretas,
+  RegraConfiguracao,
   Profissional,
   TurnoCrud,
   LocalAtendimento,
@@ -34,6 +35,8 @@ function App() {
   const [erro, setErro] = useState<string | null>(null)
   const [aba, setAba] = useState<Aba>('escala')
   const [profissionais, setProfissionais] = useState<Profissional[]>([])
+  const [configuracoesRegras, setConfiguracoesRegras] = useState<RegraConfiguracao[]>([])
+  const [idRegraSelecionada, setIdRegraSelecionada] = useState<number | ''>('')
 
 
   const [turnos, setTurnos] = useState<TurnoCrud[]>([])
@@ -196,6 +199,17 @@ function App() {
              console.error('Erro ao buscar escala:', resEscala.status)
           }
 
+          // Carregar configurações de regras
+          const resRegras = await authFetch(`${API_BASE_URL}/api/regras/configuracoes/hospital/1`)
+          if (resRegras.ok) {
+            const dadosRegras: RegraConfiguracao[] = await resRegras.json()
+            setConfiguracoesRegras(dadosRegras)
+            // Seleciona a primeira se houver
+            if (dadosRegras.length > 0 && dadosRegras[0].id) {
+              setIdRegraSelecionada(dadosRegras[0].id)
+            }
+          }
+
         } catch (error) {
           console.error('Erro ao carregar dados iniciais:', error)
         }
@@ -209,7 +223,8 @@ function App() {
       setCarregando(true)
       setErro(null)
 
-      const resposta = await authFetch(`${API_BASE_URL}/api/escala/gerar/1`, {
+      const queryParam = idRegraSelecionada ? `?idRegraConfiguracao=${idRegraSelecionada}` : ''
+      const resposta = await authFetch(`${API_BASE_URL}/api/escala/gerar/1${queryParam}`, {
         method: 'POST',
       })
 
@@ -385,25 +400,53 @@ function App() {
 
       {aba === 'escala' && (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <p className="text-gray-600 mb-2">Geração automática de escala para os próximos 15 dias.</p>
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-                onClick={gerarEscala}
-                disabled={
-                  carregando ||
-                  (usuarioLogado &&
-                    usuarioLogado.perfil !== 'ADMIN' &&
-                    usuarioLogado.perfil !== 'COORDENADOR' &&
-                    usuarioLogado.perfil !== 'SECRETARIO')
-                }
-              >
-                {carregando ? 'Gerando...' : 'Gerar escala próximos 15 dias'}
-              </button>
+          <div className="flex flex-wrap items-end justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col">
+                <label htmlFor="regra-select" className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+                  Configuração de Regras
+                </label>
+                <select
+                  id="regra-select"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 min-w-[250px]"
+                  value={idRegraSelecionada}
+                  onChange={(e) => setIdRegraSelecionada(e.target.value ? Number(e.target.value) : '')}
+                  disabled={carregando}
+                >
+                  <option value="">Padrão (Regras do Hospital)</option>
+                  {configuracoesRegras.map(config => (
+                    <option key={config.id} value={config.id}>
+                      {config.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex flex-col justify-end h-full">
+                <button
+                  className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors flex items-center shadow-sm"
+                  onClick={gerarEscala}
+                  disabled={
+                    carregando ||
+                    (usuarioLogado &&
+                      usuarioLogado.perfil !== 'ADMIN' &&
+                      usuarioLogado.perfil !== 'COORDENADOR' &&
+                      usuarioLogado.perfil !== 'SECRETARIO')
+                  }
+                >
+                  {carregando ? (
+                    <>
+                      <span className="animate-spin mr-2">⟳</span>
+                      Gerando...
+                    </>
+                  ) : 'Gerar Escala (15 dias)'}
+                </button>
+              </div>
             </div>
             
-
+            <div className="text-right text-sm text-gray-500 hidden md:block">
+              Geração automática baseada<br/>nas regras selecionadas.
+            </div>
           </div>
 
 

@@ -11,5 +11,7 @@ public interface RegraEscalaParametroRepository extends JpaRepository<RegraEscal
 
     List<RegraEscalaParametro> findByIdHospitalAndAtivoAndDataInicioVigenciaLessThanEqualAndDataFimVigenciaIsNullOrDataFimVigenciaGreaterThanEqual(
             Long idHospital, Boolean ativo, LocalDate dataInicioVigencia, LocalDate dataFimVigencia);
+
+    List<RegraEscalaParametro> findByRegraConfiguracaoId(Long idRegraConfiguracao);
 }
 

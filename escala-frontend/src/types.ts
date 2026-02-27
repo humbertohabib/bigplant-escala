@@ -22,6 +22,14 @@ export type RegrasConcretas = {
   maxPlantoesConsecutivos: number | null
 }
 
+export type RegraConfiguracao = {
+  id?: number
+  nome: string
+  descricao?: string
+  idHospital: number
+  ativo?: boolean
+}
+
 export type Especialidade = {
   id: number
   nome: string

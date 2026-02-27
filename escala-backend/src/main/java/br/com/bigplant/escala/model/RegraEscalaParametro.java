@@ -4,6 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,6 +41,10 @@ public class RegraEscalaParametro {
     private LocalDate dataFimVigencia;
 
     private Boolean ativo;
+
+    @ManyToOne
+    @JoinColumn(name = "id_regra_configuracao")
+    private RegraConfiguracao regraConfiguracao;
 
     public Long getId() {
         return id;
@@ -142,6 +148,14 @@ public class RegraEscalaParametro {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public RegraConfiguracao getRegraConfiguracao() {
+        return regraConfiguracao;
+    }
+
+    public void setRegraConfiguracao(RegraConfiguracao regraConfiguracao) {
+        this.regraConfiguracao = regraConfiguracao;
     }
 }
 

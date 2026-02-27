@@ -48,7 +48,7 @@ public class GeracaoEscalaService {
     }
 
     @Transactional
-    public Escala gerarEscalaProximosQuinzeDias(Long idHospital) {
+    public Escala gerarEscalaProximosQuinzeDias(Long idHospital, Long idRegraConfiguracao) {
         LocalDate hoje = LocalDate.now();
         LocalDate dataFim = hoje.plusDays(15);
 
@@ -85,7 +85,7 @@ public class GeracaoEscalaService {
             data = data.plusDays(1);
         }
 
-        aplicarRegrasEAlocarProfissionais(idHospital, hoje, dataFim, turnos);
+        aplicarRegrasEAlocarProfissionais(idHospital, hoje, dataFim, turnos, idRegraConfiguracao);
 
         escala.setTurnos(turnos);
 
@@ -100,15 +100,20 @@ public class GeracaoEscalaService {
     }
 
     private void aplicarRegrasEAlocarProfissionais(
-            Long idHospital, LocalDate inicio, LocalDate fim, List<Turno> turnos) {
+            Long idHospital, LocalDate inicio, LocalDate fim, List<Turno> turnos, Long idRegraConfiguracao) {
         List<Profissional> profissionais = profissionalRepository.findByIdHospitalAndAtivoTrue(idHospital);
         if (profissionais.isEmpty()) {
             return;
         }
 
-        List<RegraEscalaParametro> regras = regraEscalaParametroRepository
-                .findByIdHospitalAndAtivoAndDataInicioVigenciaLessThanEqualAndDataFimVigenciaIsNullOrDataFimVigenciaGreaterThanEqual(
-                        idHospital, true, inicio, inicio);
+        List<RegraEscalaParametro> regras;
+        if (idRegraConfiguracao != null) {
+            regras = regraEscalaParametroRepository.findByRegraConfiguracaoId(idRegraConfiguracao);
+        } else {
+            regras = regraEscalaParametroRepository
+                    .findByIdHospitalAndAtivoAndDataInicioVigenciaLessThanEqualAndDataFimVigenciaIsNullOrDataFimVigenciaGreaterThanEqual(
+                            idHospital, true, inicio, inicio);
+        }
 
         int maxNoitesMes = obterValorInteiroRegras(regras, "MAX_NOITES_MES", 0);
         int minDescansoHoras = obterValorInteiroRegras(regras, "MIN_DESCANSO_HORAS", 0);

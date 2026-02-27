@@ -27,8 +27,10 @@ public class EscalaController {
     }
 
     @PostMapping("/gerar/{idHospital}")
-    public ResponseEntity<Escala> gerarEscalaProximosQuinzeDias(@PathVariable Long idHospital) {
-        Escala escala = geracaoEscalaService.gerarEscalaProximosQuinzeDias(idHospital);
+    public ResponseEntity<Escala> gerarEscalaProximosQuinzeDias(
+            @PathVariable Long idHospital,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long idRegraConfiguracao) {
+        Escala escala = geracaoEscalaService.gerarEscalaProximosQuinzeDias(idHospital, idRegraConfiguracao);
         return ResponseEntity.ok(escala);
     }
 }
