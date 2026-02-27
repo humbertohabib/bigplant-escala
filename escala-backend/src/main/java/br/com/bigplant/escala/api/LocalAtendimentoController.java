@@ -1,7 +1,10 @@
 package br.com.bigplant.escala.api;
 
+import br.com.bigplant.escala.audit.AuditLog;
 import br.com.bigplant.escala.model.LocalAtendimento;
 import br.com.bigplant.escala.repository.LocalAtendimentoRepository;
+import br.com.bigplant.escala.service.AuditService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +25,13 @@ public class LocalAtendimentoController {
     private static final Logger logger = LoggerFactory.getLogger(LocalAtendimentoController.class);
 
     private final LocalAtendimentoRepository localAtendimentoRepository;
+    private final AuditService auditService;
+    private final HttpServletRequest request;
 
-    public LocalAtendimentoController(LocalAtendimentoRepository localAtendimentoRepository) {
+    public LocalAtendimentoController(LocalAtendimentoRepository localAtendimentoRepository, AuditService auditService, HttpServletRequest request) {
         this.localAtendimentoRepository = localAtendimentoRepository;
+        this.auditService = auditService;
+        this.request = request;
     }
 
     @GetMapping
@@ -57,6 +64,16 @@ public class LocalAtendimentoController {
             localAtendimento.setAtivo(true);
         }
         LocalAtendimento salvo = localAtendimentoRepository.save(localAtendimento);
+
+        try {
+            String usuarioId = (String) request.getAttribute("usuarioId");
+            String usuarioEmail = (String) request.getAttribute("usuarioEmail");
+            auditService.log(usuarioId, usuarioEmail, AuditLog.ActionType.CREATE, 
+                "LocalAtendimento", salvo.getId().toString(), null, salvo, request.getRemoteAddr());
+        } catch (Exception e) {
+            logger.error("Erro ao registrar auditoria de criação de local", e);
+        }
+
         return ResponseEntity.ok(salvo);
     }
 
@@ -66,6 +83,23 @@ public class LocalAtendimentoController {
         return localAtendimentoRepository
                 .findById(id)
                 .map(existente -> {
+                    // Cópia para auditoria (snapshot do estado anterior)
+                    LocalAtendimento antigo = new LocalAtendimento();
+                    antigo.setId(existente.getId());
+                    antigo.setNome(existente.getNome());
+                    antigo.setIdHospital(existente.getIdHospital());
+                    antigo.setAtivo(existente.getAtivo());
+                    antigo.setLogradouro(existente.getLogradouro());
+                    antigo.setRua(existente.getRua());
+                    antigo.setCidade(existente.getCidade());
+                    antigo.setEstado(existente.getEstado());
+                    antigo.setPais(existente.getPais());
+                    antigo.setComplemento(existente.getComplemento());
+                    antigo.setTelefoneContato(existente.getTelefoneContato());
+                    antigo.setInstituicao(existente.getInstituicao());
+                    antigo.setSetor(existente.getSetor());
+                    antigo.setSala(existente.getSala());
+
                     existente.setNome(localAtendimento.getNome());
                     existente.setIdHospital(localAtendimento.getIdHospital());
                     existente.setAtivo(localAtendimento.getAtivo());
@@ -80,6 +114,16 @@ public class LocalAtendimentoController {
                     existente.setSetor(localAtendimento.getSetor());
                     existente.setSala(localAtendimento.getSala());
                     LocalAtendimento salvo = localAtendimentoRepository.save(existente);
+
+                    try {
+                        String usuarioId = (String) request.getAttribute("usuarioId");
+                        String usuarioEmail = (String) request.getAttribute("usuarioEmail");
+                        auditService.log(usuarioId, usuarioEmail, AuditLog.ActionType.UPDATE, 
+                            "LocalAtendimento", salvo.getId().toString(), antigo, salvo, request.getRemoteAddr());
+                    } catch (Exception e) {
+                        logger.error("Erro ao registrar auditoria de atualização de local", e);
+                    }
+
                     return ResponseEntity.ok(salvo);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -87,10 +131,21 @@ public class LocalAtendimentoController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
-        if (!localAtendimentoRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        localAtendimentoRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return localAtendimentoRepository.findById(id)
+            .map(local -> {
+                localAtendimentoRepository.delete(local);
+                
+                try {
+                    String usuarioId = (String) request.getAttribute("usuarioId");
+                    String usuarioEmail = (String) request.getAttribute("usuarioEmail");
+                    auditService.log(usuarioId, usuarioEmail, AuditLog.ActionType.DELETE, 
+                        "LocalAtendimento", id.toString(), local, null, request.getRemoteAddr());
+                } catch (Exception e) {
+                    logger.error("Erro ao registrar auditoria de remoção de local", e);
+                }
+
+                return ResponseEntity.noContent().<Void>build();
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

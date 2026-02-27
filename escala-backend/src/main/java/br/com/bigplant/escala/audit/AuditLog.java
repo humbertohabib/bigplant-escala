@@ -49,6 +49,12 @@ public class AuditLog {
     @Column(name = "ip_address")
     private String ipAddress;
 
+    @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
     public enum ActionType {
         LOGIN,
         CREATE,
@@ -137,5 +143,21 @@ public class AuditLog {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 }

@@ -62,7 +62,7 @@ export function GerenciadorTrocas({
       setErro(null)
 
       // Carregar trocas
-      const resTrocas = await authFetch('/api/trocas')
+      const resTrocas = await authFetch(`${apiBaseUrl}/api/trocas`)
       if (!resTrocas.ok) throw new Error('Erro ao carregar trocas')
       const dadosTrocas: TrocaPlantao[] = await resTrocas.json()
       
@@ -71,7 +71,7 @@ export function GerenciadorTrocas({
       setTrocas(dadosTrocas)
 
       // Carregar turnos para o formulário
-      const resTurnos = await authFetch('/api/turnos')
+      const resTurnos = await authFetch(`${apiBaseUrl}/api/turnos`)
       if (!resTurnos.ok) throw new Error('Erro ao carregar turnos')
       const listaTurnos: Turno[] = await resTurnos.json()
       
@@ -123,7 +123,7 @@ export function GerenciadorTrocas({
       setEnviandoSolicitacao(true)
       setErro(null)
 
-      const resposta = await authFetch('/api/trocas', {
+      const resposta = await authFetch(`${apiBaseUrl}/api/trocas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(novaTroca),
@@ -152,7 +152,7 @@ export function GerenciadorTrocas({
 
   const handleAcaoTroca = async (id: number, acao: 'aprovar' | 'rejeitar') => {
     try {
-      const resposta = await authFetch(`/api/trocas/${id}/${acao}`, {
+      const resposta = await authFetch(`${apiBaseUrl}/api/trocas/${id}/${acao}`, {
         method: 'PUT'
       })
 

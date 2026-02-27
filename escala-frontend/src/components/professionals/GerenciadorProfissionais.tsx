@@ -11,7 +11,8 @@ import {
   Save,
   X,
   Loader2,
-  Camera
+  Camera,
+  Lock
 } from 'lucide-react'
 import type { Profissional, UsuarioAutenticado, Especialidade } from '../../types'
 
@@ -300,7 +301,17 @@ export function GerenciadorProfissionais({
                     </div>
                   )}
                   <div>
-                    <h3 className="font-semibold text-gray-900 line-clamp-1">{p.nome}</h3>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-semibold text-gray-900 line-clamp-1">{p.nome}</h3>
+                      {p.divulgarDados === false && (
+                        <div className="group/lock relative">
+                          <Lock size={14} className="text-gray-400 shrink-0 cursor-help" title="Dados pessoais não divulgados" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover/lock:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                            Dados pessoais não divulgados
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 font-mono">CRM: {p.crm}</p>
                     {p.especialidade && <p className="text-xs text-blue-600 font-medium">{p.especialidade.nome}</p>}
                   </div>

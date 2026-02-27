@@ -1,4 +1,4 @@
-import React from 'react'
+import { type FC } from 'react'
 import { X, User, Clock, MapPin, Phone, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -14,7 +14,7 @@ interface DetalhesTurnoDialogProps {
   onSolicitarTroca: () => void
 }
 
-export const DetalhesTurnoDialog: React.FC<DetalhesTurnoDialogProps> = ({
+export const DetalhesTurnoDialog: FC<DetalhesTurnoDialogProps> = ({
   isOpen,
   onClose,
   turno,

@@ -160,6 +160,8 @@ export type AuditLog = {
   oldValue?: string
   newValue?: string
   ipAddress: string
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export type Aba = 'escala' | 'regras' | 'profissionais' | 'trocas' | 'disponibilidade' | 'locais' | 'instituicoes' | 'relatorios' | 'auditoria' | 'restricted'

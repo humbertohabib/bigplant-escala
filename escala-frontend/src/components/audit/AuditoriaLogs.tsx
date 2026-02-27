@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, Eye } from 'lucide-react'
+import { Search, Filter, Eye, MapPin } from 'lucide-react'
 import type { UsuarioAutenticado, AuditLog } from '../../types'
 
 interface AuditoriaLogsProps {
@@ -119,7 +119,7 @@ export function AuditoriaLogs({ usuarioLogado }: AuditoriaLogsProps) {
                 <th className="p-4 font-semibold">Usuário</th>
                 <th className="p-4 font-semibold">Ação</th>
                 <th className="p-4 font-semibold">Recurso</th>
-                <th className="p-4 font-semibold">IP</th>
+                <th className="p-4 font-semibold">IP / Local</th>
                 <th className="p-4 font-semibold text-right">Detalhes</th>
               </tr>
             </thead>
@@ -159,7 +159,19 @@ export function AuditoriaLogs({ usuarioLogado }: AuditoriaLogsProps) {
                       {log.resourceName} #{log.resourceId}
                     </td>
                     <td className="p-4 text-gray-500 font-mono text-xs">
-                      {log.ipAddress}
+                      <div>{log.ipAddress}</div>
+                      {log.latitude && log.longitude && (
+                        <a 
+                          href={`https://www.google.com/maps?q=${log.latitude},${log.longitude}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline flex items-center gap-1 mt-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MapPin size={12} />
+                          Ver no mapa
+                        </a>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <button

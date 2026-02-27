@@ -1,4 +1,4 @@
-import React from 'react'
+import { type FC, type ReactNode } from 'react'
 import { 
   Calendar, 
   Users, 
@@ -19,7 +19,7 @@ import type { UsuarioAutenticado, Aba } from '../../types'
 import './layout.css'
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: ReactNode
   usuario: UsuarioAutenticado
   abaAtual: Aba
   setAba: (aba: Aba) => void
@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
   authFetch: (url: string, options?: RequestInit) => Promise<Response>
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+export const DashboardLayout: FC<DashboardLayoutProps> = ({
   children,
   usuario,
   abaAtual,

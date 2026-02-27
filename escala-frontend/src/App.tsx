@@ -46,6 +46,24 @@ function App() {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSenha, setLoginSenha] = useState('')
   const [loginErro, setLoginErro] = useState<string | null>(null)
+  
+  const [userLocation, setUserLocation] = useState<{ lat: number; long: number } | null>(null)
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            long: position.coords.longitude
+          })
+        },
+        (error) => {
+          console.warn('Erro ao obter localização:', error)
+        }
+      )
+    }
+  }, [])
 
   useEffect(() => {
     if (usuarioLogado) {
@@ -153,10 +171,14 @@ function App() {
   const authFetch = useCallback((input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers || {})
     if (usuarioLogado?.token) {
-      headers.set('Authorization', `Bearer ${usuarioLogado.token}`)
+      headers.append('Authorization', `Bearer ${usuarioLogado.token}`)
+    }
+    if (userLocation) {
+      headers.append('X-Location-Lat', userLocation.lat.toString())
+      headers.append('X-Location-Long', userLocation.long.toString())
     }
     return fetch(input, { ...init, headers })
-  }, [usuarioLogado?.token])
+  }, [usuarioLogado?.token, userLocation])
 
   // Carregar dados iniciais (profissionais, locais) ao logar
   useEffect(() => {

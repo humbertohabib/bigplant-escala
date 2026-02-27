@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class AuditService {
@@ -36,6 +39,24 @@ public class AuditService {
         log.setResourceName(resourceName);
         log.setResourceId(resourceId);
         log.setIpAddress(ipAddress);
+
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                String latHeader = request.getHeader("X-Location-Lat");
+                String longHeader = request.getHeader("X-Location-Long");
+                
+                if (latHeader != null && !latHeader.isBlank()) {
+                    log.setLatitude(Double.valueOf(latHeader));
+                }
+                if (longHeader != null && !longHeader.isBlank()) {
+                    log.setLongitude(Double.valueOf(longHeader));
+                }
+            }
+        } catch (Exception e) {
+            // Ignora erros ao obter localização para não falhar a auditoria
+        }
 
         try {
             if (oldValue != null) {
